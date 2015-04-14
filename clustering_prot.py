@@ -123,11 +123,13 @@ The following python modules are needed :
     In this case lipids whose headgroups z value is above the average lipids z value will
     be considered to make up the upper leaflet and those whose headgroups z value is below
     the average will be considered to be in the lower leaflet.
-    This means that the bilayer should be as flat as possible in the gro file supplied in
-    order to get a meaningful outcome.
+    This means that the bilayer should be as flat as possible in the 1st frame of the xtc
+    file supplied in order to get a meaningful outcome. 
 
-    Note that if --leaflets is set to 'no', bilayer leaflets will not be identified meaning
-    the script will not be able to discriminate between surfacic and interfacial proteins.
+	NOTE: By default the gro file is only used as a topology file and the 1st frame of the
+	xtc is used to identify leaflets. If you wish to use the gro file instead, for instance
+	in the case that the 1st frame of the xtc is not flat, you need to specify the --use_gro
+	flag: be warned that this might take a few minutes longer on large systems.
 
    (c) flipflopping lipids
     In case lipids flipflop during the trajectory, a file listing them can be supplied
@@ -199,6 +201,7 @@ Lipids identification (see note 2)
 --beads			: leaflet identification technique, see note 2(a)
 --flipflops		: input file with flipflopping lipids, see note 2(c)
 --leaflets	optimise	: leaflet identification 'optimise', 'large', 'no' or float, see note 2(b)
+--use_gro			: use gro file instead of xtc, see note 2(b)
 
 Protein clusters identification
 -----------------------------------------------------
@@ -231,6 +234,7 @@ parser.add_argument('--smooth', nargs=1, dest='nb_smoothing', default=[0], type=
 parser.add_argument('--beads', nargs=1, dest='beadsfilename', default=['no'], help=argparse.SUPPRESS)
 parser.add_argument('--flipflops', nargs=1, dest='selection_file_ff', default=['no'], help=argparse.SUPPRESS)
 parser.add_argument('--leaflets', nargs=1, dest='cutoff_leaflet', default=['optimise'], help=argparse.SUPPRESS)
+parser.add_argument('--use_gro', dest='use_gro', action='store_true', help=argparse.SUPPRESS)
 
 #protein clusters identification
 parser.add_argument('--groups', nargs=1, dest='cluster_groups_file', default=['no'], help=argparse.SUPPRESS)
