@@ -837,19 +837,55 @@ def identify_leaflets():												#DONE
 		if args.cutoff_leaflet == 'optimise':
 			print " -optimising cutoff..."
 			cutoff_value = MDAnalysis.analysis.leaflet.optimize_cutoff(U, leaflet_sele_string)
-			L = MDAnalysis.analysis.leaflet.LeafletFinder(U, leaflet_sele_string, cutoff_value[0])
+			if args.use_gro:
+				L = MDAnalysis.analysis.leaflet.LeafletFinder(U_gro, leaflet_sele_string, cutoff_value[0])
+			else:
+				L = MDAnalysis.analysis.leaflet.LeafletFinder(U, leaflet_sele_string, cutoff_value[0])
 		else:
-			L = MDAnalysis.analysis.leaflet.LeafletFinder(U, leaflet_sele_string, args.cutoff_leaflet)
+			if args.use_gro:
+				L = MDAnalysis.analysis.leaflet.LeafletFinder(U_gro, leaflet_sele_string, args.cutoff_leaflet)
+			else:
+				L = MDAnalysis.analysis.leaflet.LeafletFinder(U, leaflet_sele_string, args.cutoff_leaflet)
 	
 		if np.shape(L.groups())[0]<2:
 			print "Error: imposssible to identify 2 leaflets."
 			sys.exit(1)
+		
 		if L.group(0).centerOfGeometry()[2] > L.group(1).centerOfGeometry()[2]:
-			leaflet_sele["upper"] = L.group(0)
-			leaflet_sele["lower"] = L.group(1)
+			if args.use_gro:
+				tmp_up = L.group(0)
+				tmp_lw = L.group(1)
+			else:
+				leaflet_sele["upper"] = L.group(0)
+				leaflet_sele["lower"] = L.group(1)
 		else:
-			leaflet_sele["upper"] = L.group(1)
-			leaflet_sele["lower"] = L.group(0)
+			if args.use_gro:
+				tmp_up = L.group(1)
+				tmp_lw = L.group(0)			
+			else:
+				leaflet_sele["upper"] = L.group(1)
+				leaflet_sele["lower"] = L.group(0)
+
+		if args.use_gro:		
+			tmp_up_indices = tmp_up.indices()
+			tmp_lw_indices = tmp_lw.indices()
+			tmp_up_nb_atoms = len(tmp_up_indices)
+			tmp_lw_nb_atoms = len(tmp_lw_indices)
+			leaflet_sele["upper"] = U.selectAtoms("bynum " + str(tmp_up_indices[0] + 1))
+			leaflet_sele["lower"] = U.selectAtoms("bynum " + str(tmp_lw_indices[0] + 1))
+			for index in range(1,tmp_up_nb_atoms):
+				leaflet_sele["upper"] += U.selectAtoms("bynum " + str(tmp_up_indices[index] +1 ))
+				progress = '\r -identifying upper leaflet from gro file... ' + str(round(index/float(tmp_up_nb_atoms)*100,1)) + '%   '
+				sys.stdout.flush()
+				sys.stdout.write(progress)
+			print ''
+			for index in range(1,tmp_lw_nb_atoms):
+				leaflet_sele["lower"] += U.selectAtoms("bynum " + str(tmp_lw_indices[index] + 1))
+				progress = '\r -identifying lower leaflet from gro file... ' + str(round(index/float(tmp_lw_nb_atoms)*100,1)) + '%   '
+				sys.stdout.flush()
+				sys.stdout.write(progress)
+			print ''
+
 		leaflet_sele["both"] = leaflet_sele["lower"] + leaflet_sele["upper"]
 		if np.shape(L.groups())[0] == 2:
 			print " -found 2 leaflets: ", leaflet_sele["upper"].numberOfResidues(), '(upper) and ', leaflet_sele["lower"].numberOfResidues(), '(lower) lipids'
@@ -858,12 +894,37 @@ def identify_leaflets():												#DONE
 			for g in range(2, np.shape(L.groups())[0]):
 				other_lipids += L.group(g).numberOfResidues()
 			print " -found " + str(np.shape(L.groups())[0]) + " groups: " + str(leaflet_sele["upper"].numberOfResidues()) + "(upper), " + str(leaflet_sele["lower"].numberOfResidues()) + "(lower) and " + str(other_lipids) + " (others) lipids respectively"
-	#use cog:
+	#use cog and z coordinates in the GRO file supplied:
 	else:
-		leaflet_sele["both"] = U.selectAtoms(leaflet_sele_string)
-		tmp_lipids_avg_z = leaflet_sele["both"].centerOfGeometry()[2]
-		leaflet_sele["upper"] = leaflet_sele["both"].selectAtoms("prop z > " + str(tmp_lipids_avg_z))
-		leaflet_sele["lower"] = leaflet_sele["both"].selectAtoms("prop z < " + str(tmp_lipids_avg_z))
+		if args.use_gro:
+			tmp_all = U_gro.selectAtoms(leaflet_sele_string)
+			tmp_lipids_avg_z = tmp_all.centerOfGeometry()[2]
+			tmp_up = tmp_all.selectAtoms("prop z > " + str(tmp_lipids_avg_z))
+			tmp_lw = tmp_all.selectAtoms("prop z < " + str(tmp_lipids_avg_z))
+			tmp_up_indices = tmp_up.indices()
+			tmp_lw_indices = tmp_lw.indices()
+			tmp_up_nb_atoms = len(tmp_up_indices)
+			tmp_lw_nb_atoms = len(tmp_lw_indices)
+			leaflet_sele["upper"] = U.selectAtoms("bynum " + str(tmp_up_indices[0] + 1))
+			leaflet_sele["lower"] = U.selectAtoms("bynum " + str(tmp_lw_indices[0] + 1))
+			for index in range(1,tmp_up_nb_atoms):
+				leaflet_sele["upper"] += U.selectAtoms("bynum " + str(tmp_up_indices[index] + 1))
+				progress = '\r -identifying upper leaflet from gro file... ' + str(round(index/float(tmp_up_nb_atoms)*100,1)) + '%   '
+				sys.stdout.flush()
+				sys.stdout.write(progress)
+			print ''
+			for index in range(1,tmp_lw_nb_atoms):
+				leaflet_sele["lower"] += U.selectAtoms("bynum " + str(tmp_lw_indices[index] + 1))
+				progress = '\r -identifying lower leaflet from gro file... ' + str(round(index/float(tmp_lw_nb_atoms)*100,1)) + '%   '
+				sys.stdout.flush()
+				sys.stdout.write(progress)
+			leaflet_sele["both"] = leaflet_sele["upper"] + leaflet_sele["lower"]
+			print ''
+		else:
+			leaflet_sele["both"] = U.selectAtoms(leaflet_sele_string)
+			tmp_lipids_avg_z = leaflet_sele["both"].centerOfGeometry()[2]
+			leaflet_sele["upper"] = leaflet_sele["both"].selectAtoms("prop z > " + str(tmp_lipids_avg_z))
+			leaflet_sele["lower"] = leaflet_sele["both"].selectAtoms("prop z < " + str(tmp_lipids_avg_z))
 		print " -found 2 leaflets: ", leaflet_sele["upper"].numberOfResidues(), '(upper) and ', leaflet_sele["lower"].numberOfResidues(), '(lower) lipids'
 		
 	return
