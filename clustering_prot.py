@@ -426,9 +426,9 @@ else:
 #=========================================================================================
 if args.output_folder=="no":
 	if args.xtcfilename=="no":
-		args.output_folder="cluster_prot_" + args.grofilename[:-4]
+		args.output_folder="clustering_prot_" + args.grofilename[:-4]
 	else:
-		args.output_folder="cluster_prot_" + args.xtcfilename[:-4]
+		args.output_folder="clustering_prot_" + args.xtcfilename[:-4]
 if os.path.isdir(args.output_folder):
 	print "Error: folder " + str(args.output_folder) + " already exists, choose a different output name via -o."
 	sys.exit(1)
@@ -470,11 +470,11 @@ else:
 	
 	#create log
 	#----------
-	filename_log=os.getcwd() + '/' + str(args.output_folder) + '/cluster_prot.log'
+	filename_log=os.getcwd() + '/' + str(args.output_folder) + '/clustering_prot.log'
 	output_log=open(filename_log, 'w')		
-	output_log.write("[cluster_prot v" + str(version_nb) + "]\n")
+	output_log.write("[clustering_prot v" + str(version_nb) + "]\n")
 	output_log.write("\nThis folder and its content were created using the following command:\n\n")
-	tmp_log="python cluster_prot.py"
+	tmp_log="python clustering_prot.py"
 	for c in sys.argv[1:]:
 		tmp_log+=" " + c
 	output_log.write(tmp_log + "\n")
@@ -745,10 +745,13 @@ def identify_proteins():												#DONE
 				proteins_nb[tmp_specie] = 0
 				proteins_sele[tmp_specie] = {}
 				proteins_comp[tmp_specie] = tmp_comp
-				proteins_length[tmp_specie] = last_resnum - prev_resnum
+				proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))	
+				proteins_length[tmp_specie] = proteins_sele[tmp_specie][proteins_nb[tmp_specie]].numberOfResidues()
+			#case: existing one
+			else:
+				proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))	
 				
-			#add protein to identified ones
-			proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))
+			#update number of proteins and counters
 			proteins_nb[tmp_specie] += 1
 			proteins_nb["all"] += 1
 			prev_resnum = a.resnum
@@ -783,9 +786,11 @@ def identify_proteins():												#DONE
 
 	#display results
 	#================
-	#debug
-	print " -found", proteins_nb["all"], "proteins"
-	print " -found", len(proteins_species), "species"
+	global nb_species, nb_proteins
+	nb_species = len(proteins_species)
+	nb_proteins = proteins_nb["all"]
+	print " -found", nb_proteins, "proteins"
+	print " -found", nb_species, "species"
 	for s in proteins_species:
 		print "   " + str(s) + ": " + str(proteins_nb[s])
 	print ""
@@ -1023,7 +1028,7 @@ def initialise_groups():												#DONE
 # data structures
 #=========================================================================================
 
-def data_struct_time():													#DONE
+def struct_time():													#DONE
 
 	global frames_nb
 	global frames_time
@@ -1031,7 +1036,7 @@ def data_struct_time():													#DONE
 	frames_time = np.zeros(nb_frames_to_process)
 
 	return
-def data_struct_stats():												#DONE
+def struct_stats():												#DONE
 	
 	#NB:
 	# 1. relative distribution of protein population at each frame
@@ -1065,20 +1070,25 @@ def data_struct_stats():												#DONE
 			proteins_groups_stability = {}
 	
 	return
-def data_struct_proteins():												#DONE
+def struct_proteins():												#DONE
 	
 	#NB:
 	# 1. size of the cluster size/index of the size group each protein is involved in at each frame
-	# 2. for sizes -1 = lower, proteins_nb = upper
-	# 3. for groups groups_number = "other", - 1 = lower, groups_number + 1 = upper
-	
-	global proteins_cluster_status_sizes
+	# 2. for sizes: -1 = lower, nb_proteins = upper
+	# 3. for groups: groups_number = "other", - 1 = lower, groups_number + 1 = upper
 
-	proteins_cluster_status_sizes = np.zeros((proteins_nb, nb_frames_to_process))
+	global 
+	proteins_size = np.zeros((nb_frames_to_process, nb_proteins))
 	if args.cluster_groups_file != "no":
-		global proteins_cluster_status_groups
-		proteins_cluster_status_groups = np.zeros((proteins_nb, nb_frames_to_process))
-	
+		global proteins_group
+		proteins_group = np.zeros((nb_frames_to_process, nb_proteins))
+	proteins_neighbours = np.zeros((nb_frames_to_process, nb_proteins, nb_species))
+	proteins_contacts = np.zeros((nb_proteins, nb_proteins))
+	proteins_residues = {}
+	for s_index1 in range(0,nb_species):
+		for s_index2 in range(s_index1, nb_species):
+			proteins_residues[s_index1, s_index2] = np.zeros((proteins_length[proteins_species[s_index1]], proteins_length[proteins_species[s_index2]]))
+
 	return
 		
 #=========================================================================================
@@ -1455,7 +1465,7 @@ def calculate_statistics():												#DONE
 def write_warning():
 	filename_details=os.getcwd() + '/' + str(args.output_folder) + '/warning.stat'
 	output_stat = open(filename_details, 'w')		
-	output_stat.write("[protein clustering statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+	output_stat.write("[protein clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_stat.write("\n")	
 	#general info
 	output_stat.write("1. Nb of proteins: " + str(proteins_nb) + "\n")
@@ -1471,7 +1481,7 @@ def write_warning():
 		output_stat.write(" - search radius = " + str(args.dbscan_dist) + " Angstrom, nb of neighbours = " + str(args.dbscan_nb) + "\n")
 	output_stat.write("\n")
 	#warning message
-	output_stat.write("Warning: a single cluster size (" + str(cluster_sizes_sampled[0]) + ") was detected throughout the trajectory. Check the -m, -c, -r or -n options (see cluster_prot -h).")
+	output_stat.write("Warning: a single cluster size (" + str(cluster_sizes_sampled[0]) + ") was detected throughout the trajectory. Check the -m, -c, -r or -n options (see clustering_prot -h).")
 	output_stat.close()
 	
 	return
@@ -1481,7 +1491,7 @@ def write_xvg_biggest():
 	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/1_sizes/1_3_biggest/xvg/1_3_clusterprot_biggest.txt'
 	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/1_sizes/1_3_biggest/xvg/1_3_clusterprot_biggest.xvg'
 	output_txt = open(filename_txt, 'w')
-	output_txt.write("@[peptides clustering statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+	output_txt.write("@[peptides clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_txt.write("@Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_3_clusterprot_biggest.xvg.\n")
 	output_xvg = open(filename_xvg, 'w')
 	output_xvg.write("@ title \"Evolution of statistics of biggest cluster size\"\n")
@@ -1510,7 +1520,7 @@ def write_xvg_mostrep():
 	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/1_sizes/1_4_mostrep/xvg/1_4_clusterprot_mostrep.txt'
 	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/1_sizes/1_4_mostrep/xvg/1_4_clusterprot_mostrep.xvg'
 	output_txt = open(filename_txt, 'w')
-	output_txt.write("@[peptides clustering statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+	output_txt.write("@[peptides clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_txt.write("@Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_4_clusterprot_mostrep.xvg.\n")
 	output_xvg = open(filename_xvg, 'w')
 	output_xvg.write("@ title \"Evolution of statistics of most representative cluster size\"\n")
@@ -1654,10 +1664,10 @@ def write_xvg_sizes_TM():
 	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/1_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_TM.txt'
 	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/1_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_TM.xvg'
 	output_txt = open(filename_txt, 'w')
-	output_txt.write("# [protein aggregation statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+	output_txt.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_txt.write("# Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_2_clusterprot_1D_TM.xvg.\n")
 	output_xvg = open(filename_xvg, 'w')
-	output_xvg.write("# [protein aggregation statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+	output_xvg.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_xvg.write("# - proteins detected: " + str(proteins_nb) + "\n")
 	output_xvg.write("# - algorithm chosen: " + str(args.m_algorithm) + "\n")
 	if args.m_algorithm == "density":
@@ -1774,10 +1784,10 @@ def write_xvg_sizes_interfacial():
 	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/1_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_interfacial.txt'
 	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/1_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_interfacial.xvg'
 	output_txt = open(filename_txt, 'w')
-	output_txt.write("# [protein aggregation statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+	output_txt.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_txt.write("# Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_2_clusterprot_1D_interfacial.xvg.\n")
 	output_xvg = open(filename_xvg, 'w')
-	output_xvg.write("# [protein aggregation statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+	output_xvg.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_xvg.write("# - proteins detected: " + str(proteins_nb) + "\n")
 	output_xvg.write("# - algorithm chosen: " + str(args.m_algorithm) + "\n")
 	if args.m_algorithm == "density":
@@ -1966,10 +1976,10 @@ def write_xvg_groups():
 	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/2_groups/2_2_plots_1D/xvg/2_2_clusterprot_1D.txt'
 	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/2_groups/2_2_plots_1D/xvg/2_2_clusterprot_1D.xvg'
 	output_txt = open(filename_txt, 'w')
-	output_txt.write("@[peptides clustering statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+	output_txt.write("@[peptides clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_txt.write("@Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 2_2_clusterprot_1D.xvg.\n")
 	output_xvg = open(filename_xvg, 'w')
-	output_xvg.write("# [protein aggregation statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+	output_xvg.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_xvg.write("# - proteins detected: " + str(proteins_nb) + "\n")
 	output_xvg.write("# - algorithm chosen: " + str(args.m_algorithm) + "\n")
 	if args.m_algorithm == "density":
@@ -2164,7 +2174,7 @@ def write_stability_groups():											#TO CHECK
 	
 	filename_details = os.getcwd() + '/' + str(args.output_folder) + '/2_groups/2_0_clusterprot_stability.stat'
 	output_stat = open(filename_details, 'w')		
-	output_stat.write("[protein clustering statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+	output_stat.write("[protein clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_stat.write("\n")
 
 	#general info
@@ -2224,7 +2234,7 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 		output_stat = open(filename_details, 'w')		
 	
 		#general info
-		output_stat.write("[protein clustering statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+		output_stat.write("[protein clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 		output_stat.write("\n")
 		output_stat.write("1. nb of proteins: " + str(proteins_nb) + "\n")
 		output_stat.write("\n")
@@ -2263,7 +2273,7 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 			output_stat = open(filename_details, 'w')		
 
 			#general info
-			output_stat.write("[protein clustering statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+			output_stat.write("[protein clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 			output_stat.write("\n")
 			output_stat.write("1. nb of proteins: " + str(proteins_nb) + "\n")
 			output_stat.write("\n")
@@ -2310,7 +2320,7 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 		output_stat = open(filename_details, 'w')		
 	
 		#general info
-		output_stat.write("[protein clustering statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+		output_stat.write("[protein clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 		output_stat.write("\n")
 		output_stat.write("1. nb of proteins: " + str(proteins_nb) + "\n")
 		output_stat.write("2. cluster detection Method:\n")
@@ -2355,7 +2365,7 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 			output_stat = open(filename_details, 'w')		
 		
 			#general info
-			output_stat.write("[protein clustering statistics - written by cluster_prot v" + str(version_nb) + "]\n")
+			output_stat.write("[protein clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 			output_stat.write("\n")
 			output_stat.write("1. nb of proteins: " + str(proteins_nb) + "\n")
 			output_stat.write("2. cluster detection Method:\n")
@@ -2558,9 +2568,9 @@ if args.cluster_groups_file != "no":
 # initialise data structures
 #=========================================================================================
 print "\nInitialising data structures..."
-data_struct_time()
-data_struct_stats()
-data_struct_proteins()
+struct_time()
+struct_stats()
+struct_proteins()
 if args.xtcfilename != "no" and args.buffer_size != -1:
 	write_xtc_annotation("initialise")
 
@@ -2669,7 +2679,7 @@ if args.xtcfilename == "no":
 		write_frame_annotation(0, 0)
 	else:
 		print "\n"
-		print "Warning: a single cluster size (", str(cluster_sizes_sampled[0]), ") was detected throughout the trajectory. Check the --algorithm, --cutoff, --radius or --neighbours options (see cluster_prot -h)."
+		print "Warning: a single cluster size (", str(cluster_sizes_sampled[0]), ") was detected throughout the trajectory. Check the --algorithm, --cutoff, --radius or --neighbours options (see clustering_prot -h)."
 		write_warning()
 
 #case: xtc file
@@ -2703,7 +2713,7 @@ else:
 			write_stability_groups()
 	else:
 		print "\n"
-		print "Warning: a single cluster size (", str(cluster_sizes_sampled[0]), ") was detected throughout the trajectory, maybe check the cluster detection options (see cluster_prot -h)."
+		print "Warning: a single cluster size (", str(cluster_sizes_sampled[0]), ") was detected throughout the trajectory, maybe check the cluster detection options (see clustering_prot -h)."
 		write_warning()
 		
 #=========================================================================================
