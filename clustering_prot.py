@@ -199,13 +199,13 @@ Lipids identification (see note 2)
 -----------------------------------------------------
 --beads			: leaflet identification technique, see note 2(a)
 --flipflops		: input file with flipflopping lipids, see note 2(c)
---leaflets	optimise	: leaflet identification 'optimise', 'large', 'no' or float, see note 2(b)
---use_gro			: use gro file instead of xtc, see note 2(b)
+--leaflets	optimise: leaflet identification 'optimise', 'large', 'no' or float, see note 2(b)
+--use_gro		: use gro file instead of xtc, see note 2(b)
 
 Protein clusters identification
 -----------------------------------------------------
 --groups		: cluster groups definition file, see note 4 [BETA]
---proteins		: protein selection file, (optional, see note 3)
+--contact_res	8	: cutoff to consider contacts between residues c.o.g (Angstrom)
 --colours_sizes	1,9	: range of cluster sizes to colour, see note 5
 --algorithm	min	: 'cog','min' or 'density', see 'DESCRIPTION'
 --nx_cutoff 	8	: networkX cutoff distance for protein-protein contact (Angstrom)
@@ -236,7 +236,7 @@ parser.add_argument('--use_gro', dest='use_gro', action='store_true', help=argpa
 
 #protein clusters identification
 parser.add_argument('--groups', nargs=1, dest='cluster_groups_file', default=['no'], help=argparse.SUPPRESS)
-parser.add_argument('--proteins', nargs=1, dest='selection_file_prot', default=['auto'], help=argparse.SUPPRESS)
+parser.add_argument('--contact_res', nargs=1, dest='contact_res', default=[8], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--colours_sizes', nargs=1, dest='colours_sizes', default=['1,9'], help=argparse.SUPPRESS)
 parser.add_argument('--algorithm', dest='m_algorithm', choices=['cog','min','density'], default='cog', help=argparse.SUPPRESS)
 parser.add_argument('--nx_cutoff', nargs=1, dest='cutoff_connect', default=[8], type=float, help=argparse.SUPPRESS)
@@ -270,7 +270,7 @@ args.cutoff_leaflet = args.cutoff_leaflet[0]
 args.selection_file_ff = args.selection_file_ff[0]
 #protein clusters identification
 args.cluster_groups_file = args.cluster_groups_file[0]
-args.selection_file_prot = args.selection_file_prot[0]
+args.contact_res = args.contact_res[0]
 args.colours_sizes = args.colours_sizes[0]
 args.cutoff_connect = args.cutoff_connect[0]
 args.dbscan_dist = args.dbscan_dist[0]
@@ -484,8 +484,6 @@ else:
 	#----------------
 	if args.selection_file_ff != "no":
 		shutil.copy2(args.selection_file_ff,args.output_folder + "/")	
-	if args.selection_file_prot != "no" and args.selection_file_prot != "auto":
-		shutil.copy2(args.selection_file_prot,args.output_folder + "/")
 	if args.cluster_groups_file != "no":
 		shutil.copy2(args.cluster_groups_file,args.output_folder + "/")
 	if args.beadsfilename != "no":
@@ -1144,7 +1142,7 @@ def get_distances(box_dim):
 		dist_matrix = MDAnalysis.analysis.distances.distance_array(np.float32(tmp_proteins_cogs), np.float32(tmp_proteins_cogs), box_dim)
 
 	return dist_matrix
-def calculate_cog(tmp_coords, box_dim):									#DONE
+def calculate_cog(tmp_coords, box_dim):
 	
 	#this method allows to take pbc into account when calculcating the center of geometry 
 	#see: http://en.wikipedia.org/wiki/Center_of_mass#Systems_with_periodic_boundary_conditions
@@ -1160,14 +1158,14 @@ def calculate_cog(tmp_coords, box_dim):									#DONE
 		cog_coord[n] = tet_avg * box_dim[n] / float(2*math.pi)
 	
 	return cog_coord
-def detect_clusters_connectivity(dist, box_dim):						#DONE
+def detect_clusters_connectivity(dist, box_dim):
 	
 	#use networkx algorithm
 	connected = (dist < args.cutoff_connect)
 	network = nx.Graph(connected)
 	
 	return network
-def detect_clusters_density(dist, box_dim):								#DONE
+def detect_clusters_density(dist, box_dim):
 	
 	#run DBSCAN algorithm
 	dbscan_output = DBSCAN(eps = args.dbscan_dist, metric = 'precomputed', min_samples = args.dbscan_nb).fit(dist)
@@ -1182,7 +1180,7 @@ def detect_clusters_density(dist, box_dim):								#DONE
 			groups.append(map(lambda p:p[0] , tmp_pos))
 
 	return groups
-def process_clusters(clusters, f_index, f_nb):							#DONE
+def process_clusters(clusters, f_index, f_nb):
 
 	global vmd_cluster_size
 	
@@ -1245,7 +1243,7 @@ def process_clusters(clusters, f_index, f_nb):							#DONE
 					vmd_cluster_group = ""
 
 	return
-def process_clusters_TM(network, f_index, box_dim, f_nb):				#DONE
+def process_clusters_TM(network, f_index, box_dim, f_nb):
 
 	global vmd_cluster_size
 		
@@ -1254,146 +1252,120 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):				#DONE
 	c_counter = 0
 	tmp_lip_coords = {l: leaflet_sele[l].coordinates() for l in ["lower","upper"]}
 	
-	#case: store cluster size only
-	#=============================
-	if args.cluster_groups_file == "no":			
-		for cluster in clusters:
-			#display update
+	#browse clusters found
+	#=====================
+	for cluster in clusters:
+		#display update
+		if args.xtcfilename != "no":
 			c_counter += 1
 			progress = '\r -processing frame ' + str(f_nb+1) + '/' + str(nb_frames_to_process) + ' (every ' + str(args.frames_dt) + ' from ' + str(f_start) + ' to ' + str(f_end) + ' out of ' + str(nb_frames_xtc) + ') and cluster ' + str(c_counter) + '/' + str(nb_clusters) + '              '
 			sys.stdout.flush()
 			sys.stdout.write(progress)
-
-			#get size and group
-			c_size = np.size(cluster)
-
-			#create selection for current cluster
-			c_sele = MDAnalysis.core.AtomGroup.AtomGroup([])	
-			p_coords = {}
-			p_coords[cluster[0]] = proteins_sele[prot_index2specie[cluster[0]]][prot_index2rel[cluster[0]]].coordinates()
-			tmp_c_sele_coordinates = p_coords[cluster[0]]
-			for p_index in cluster[1:]:
-				p_coord[p_index] = proteins_sele[prot_index2specie[p_index]][prot_index2rel[p_index]].coordinates()
-				tmp_c_sele_coordinates = np.concatenate((tmp_c_sele_coordinates,p_coord[p_index]))
-			#find closest PO4 particles for each particles of clusters, if all are in the same leaflet then it's surfacic [NB: this is done at the CLUSTER level (the same criteria at the protein level would probably fail)]
-			dist_min_lower = np.min(MDAnalysis.analysis.distances.distance_array(tmp_c_sele_coordinates, tmp_lip_coords["lower"], box_dim), axis = 1)
-			dist_min_upper = np.min(MDAnalysis.analysis.distances.distance_array(tmp_c_sele_coordinates, tmp_lip_coords["upper"], box_dim), axis = 1)
-			dist = dist_min_upper - dist_min_lower
-			   
-			#case: interfacial lower
-			if np.size(dist[dist>0]) == np.size(dist):
-				proteins_size[f_index, cluster] = -1
-			
-			#case: interfacial upper
-			elif np.size(dist[dist>0]) == 0:
-				proteins_size[f_index, cluster] = 99999
-			
-			#case: TM
-			#--------
-			else:
-				#initialise cluster comp and list of pairs treated
-				tmp_comp = [0] * nb_species
-				tmp_pairs_treated = []
-				
-				#store size
-				proteins_size[f_index, cluster] = c_size
-
-				#browse each protein within cluster
-				for p_index in cluster:
-					#retrieve details of current protein
-					p_s_index = prot_index2sindex[p_index]
-					p_specie = proteins_species[p_s_index]
-					
-					p_length = proteins_length[p_specie]
-					p_res_cog = []
-					for r in proteins_sele[p_specie][prot_index2rel[p_index]].residues:
-						p_res_cog.append(r.centroid())
-					
-					#update number of each protein specie in the cluster
-					tmp_comp[p_s_index] += 1
-
-					#retrieve neighbours of current protein (remove itself)
-					tmp_neighb = network.neighbors(p_index)
-					tmp_neighb.remove(p_index)
-					
-					#browse neighbours of current protein
-					for pp_index in tmp_neighb:
-						if (min(p_index,pp_index),max(p_index,pp_index)) not in tmp_pairs_treated:
-							#retrieve details of current neighbour
-							pp_s_index = prot_index2sindex[pp_index]
-							pp_specie = proteins_species[pp_s_index]
-							pp_length = proteins_length[proteins_species[pp_s_index]]
-							pp_res_cog = []
-							for r in proteins_sele[pp_specie][prot_index2rel[pp_index]].residues:
-								pp_res_cog.append(r.centroid())
-							
-							#store type of neighbour
-							proteins_nb_neighbours[f_index, p_index, pp_s_index] += 1
-						
-							#store residue contacts with neightbours
-							dist_p_pp_matrix = MDAnalysis.analysis.distances.distance_array(np.asarrayy[p_res_cog], np.asarrayy[pp_res_cog], box_dim)
-							proteins_ctcts_res[p_s_index, pp_s_index][dist_p_pp_matrix < 8] += 1
-							
-							#store total contacts with neighbour
-							proteins_ctcts_prot[p_index, pp_index] += np.sum(dist_p_pp_matrix < 8)
-							
-							#store same info from the neighbour's perspective
-							proteins_nb_neighbours[f_index, pp_index, p_s_index] += 1
-							dist_pp_p_matrix = dist_p_pp_matrix.T
-							proteins_ctcts_res[p_s_index, pp_s_index][dist_pp_p_matrix < 8] += 1
-							proteins_ctcts_prot[p_index, pp_index] += np.sum(dist_pp_p_matrix < 8)
-						
-							#store the fact that the pair p - pp has been treated
-							tmp_pairs_treated.append((min(p_index,pp_index),max(p_index,pp_index)))
-						else:
-							continue
-				
-				#store cluster composition
-				tmp_comp = tuple(tmp_comp)
-				if (c_size - 1) not in clusters_comp.keys():
-					clusters_comp[c_size-1] = {}
-				if tmp_comp not in clusters_comp[c_size-1].keys():
-					clusters_comp[c_size-1][tmp_comp] = 0
-				clusters_comp[c_size-1][tmp_comp] += 1
-
-	#case: store cluster size and group size
-	#=======================================
-	else:
-		for cluster in clusters:
-			#display update
+		else:
 			c_counter += 1
-			progress = '\r -processing frame ' + str(f_nb+1) + '/' + str(nb_frames_to_process) + ' (every ' + str(args.frames_dt) + ' from ' + str(f_start) + ' to ' + str(f_end) + ' out of ' + str(nb_frames_xtc) + ') and cluster ' + str(c_counter) + '/' + str(nb_clusters) + '              '
+			progress = '\r -processing cluster ' + str(c_counter) + '/' + str(nb_clusters) + '              '
 			sys.stdout.flush()
 			sys.stdout.write(progress)
+			
+		#get size
+		c_size = np.size(cluster)
 
-			#get size and group
-			c_size = np.size(cluster)
-			g_index = groups_sizes_dict[c_size]
-
-			#create selection for current cluster
-			c_sele = MDAnalysis.core.AtomGroup.AtomGroup([])	
-			for p_index in cluster:
-				c_sele += proteins_sele[prot_index2specie[p_index]][prot_index2rel[p_index]]
-			tmp_c_sele_coordinates = c_sele.coordinates()
-			#find closest PO4 particles for each particles of clusters, if all are in the same leaflet then it's surfacic [NB: this is done at the CLUSTER level (the same criteria at the protein level would probably fail)]
-			dist_min_lower = np.min(MDAnalysis.analysis.distances.distance_array(tmp_c_sele_coordinates, tmp_lip_coords["lower"], box_dim), axis = 1)
-			dist_min_upper = np.min(MDAnalysis.analysis.distances.distance_array(tmp_c_sele_coordinates, tmp_lip_coords["upper"], box_dim), axis = 1)
-			dist = dist_min_upper - dist_min_lower
-			   
-			#case: interfacial lower
-			if np.size(dist[dist>0]) == np.size(dist):
-				proteins_size[f_index, cluster] = -1					#'cluster' is used as an array containing the index of the proteins for which to store the cluster size
+		#create selection for current cluster
+		c_sele = MDAnalysis.core.AtomGroup.AtomGroup([])	
+		p_coords = {}
+		p_coords[cluster[0]] = proteins_sele[prot_index2specie[cluster[0]]][prot_index2rel[cluster[0]]].coordinates()
+		tmp_c_sele_coordinates = p_coords[cluster[0]]
+		for p_index in cluster[1:]:
+			p_coord[p_index] = proteins_sele[prot_index2specie[p_index]][prot_index2rel[p_index]].coordinates()
+			tmp_c_sele_coordinates = np.concatenate((tmp_c_sele_coordinates,p_coord[p_index]))
+		#find closest PO4 particles for each particles of clusters, if all are in the same leaflet then it's surfacic [NB: this is done at the CLUSTER level (the same criteria at the protein level would probably fail)]
+		dist_min_lower = np.min(MDAnalysis.analysis.distances.distance_array(tmp_c_sele_coordinates, tmp_lip_coords["lower"], box_dim), axis = 1)
+		dist_min_upper = np.min(MDAnalysis.analysis.distances.distance_array(tmp_c_sele_coordinates, tmp_lip_coords["upper"], box_dim), axis = 1)
+		dist = dist_min_upper - dist_min_lower
+		   
+		#case: interfacial: lower
+		#------------------------
+		if np.size(dist[dist>0]) == np.size(dist):
+			proteins_size[f_index, cluster] = -1
+			if args.cluster_groups_file != "no":
 				proteins_group[f_index, cluster] = -1
+		
+		#case: interfacial: upper
+		#------------------------
+		elif np.size(dist[dist>0]) == 0:
+			proteins_size[f_index, cluster] = 99999
+			if args.cluster_groups_file != "no":
+				proteins_group[f_index, cluster] = groups_number + 1			
+		
+		#case: TM
+		#--------
+		else:
+			#initialise cluster comp and list of pairs treated
+			tmp_comp = [0] * nb_species
+			tmp_pairs_treated = []
 			
-			#case: interfacial upper
-			elif np.size(dist[dist>0]) == 0:
-				proteins_size[f_index, cluster] = 99999
-				proteins_group[f_index, cluster] = groups_number + 1
+			#store size
+			proteins_size[f_index, cluster] = c_size
+			if args.cluster_groups_file != "no":
+				proteins_group[f_index, cluster] = groups_sizes_dict[c_size]
+
+			#browse each protein within cluster
+			for p_index in cluster:
+				#retrieve details of current protein
+				p_s_index = prot_index2sindex[p_index]
+				p_specie = proteins_species[p_s_index]
+				
+				p_length = proteins_length[p_specie]
+				p_res_cog = []
+				for r in proteins_sele[p_specie][prot_index2rel[p_index]].residues:
+					p_res_cog.append(r.centroid())
+				
+				#update number of each protein specie in the cluster
+				tmp_comp[p_s_index] += 1
+
+				#retrieve neighbours of current protein (remove itself)
+				tmp_neighb = network.neighbors(p_index)
+				tmp_neighb.remove(p_index)
+				
+				#browse neighbours of current protein
+				for pp_index in tmp_neighb:
+					if (min(p_index,pp_index),max(p_index,pp_index)) not in tmp_pairs_treated:
+						#retrieve details of current neighbour
+						pp_s_index = prot_index2sindex[pp_index]
+						pp_specie = proteins_species[pp_s_index]
+						pp_length = proteins_length[proteins_species[pp_s_index]]
+						pp_res_cog = []
+						for r in proteins_sele[pp_specie][prot_index2rel[pp_index]].residues:
+							pp_res_cog.append(r.centroid())
+						
+						#store type of neighbour
+						proteins_nb_neighbours[f_index, p_index, pp_s_index] += 1
+					
+						#store residue contacts with neightbours
+						dist_p_pp_matrix = MDAnalysis.analysis.distances.distance_array(np.asarrayy[p_res_cog], np.asarrayy[pp_res_cog], box_dim)
+						proteins_ctcts_res[p_s_index, pp_s_index][dist_p_pp_matrix < args.contact_res] += 1
+						
+						#store total contacts with neighbour
+						proteins_ctcts_prot[p_index, pp_index] += np.sum(dist_p_pp_matrix < args.contact_res)
+						
+						#store same info from the neighbour's perspective
+						proteins_nb_neighbours[f_index, pp_index, p_s_index] += 1
+						dist_pp_p_matrix = dist_p_pp_matrix.T
+						proteins_ctcts_res[p_s_index, pp_s_index][dist_pp_p_matrix < args.contact_res] += 1
+						proteins_ctcts_prot[p_index, pp_index] += np.sum(dist_pp_p_matrix < args.contact_res)
+					
+						#store the fact that the pair p - pp has been treated
+						tmp_pairs_treated.append((min(p_index,pp_index),max(p_index,pp_index)))
+					else:
+						continue
 			
-			#case: TM
-			else:
-				proteins_size[f_index, cluster] = c_size				
-				proteins_group[f_index, cluster] = g_index
+			#store cluster composition
+			tmp_comp = tuple(tmp_comp)
+			if (c_size - 1) not in clusters_comp.keys():
+				clusters_comp[c_size-1] = {}
+			if tmp_comp not in clusters_comp[c_size-1].keys():
+				clusters_comp[c_size-1][tmp_comp] = 0
+			clusters_comp[c_size-1][tmp_comp] += 1
 	
 	#create annotation line for current frame
 	#========================================
@@ -1421,6 +1393,11 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):				#DONE
 					vmd_cluster_group = ""
 	
 	return
+
+#=========================================================================================
+# process results
+#=========================================================================================
+
 def get_sizes_sampled():												#DONE
 		
 	global cluster_sizes_sampled
@@ -2684,7 +2661,8 @@ if args.xtcfilename == "no":
 		process_clusters(clusters, 0, 1)
 	else:
 		process_clusters_TM(clusters, 0, box_dim, 1)
-			
+	print ""
+
 #case: xtc file
 #==============
 else:
@@ -2727,13 +2705,12 @@ else:
 				vmd_counter = 0
 			else:
 				vmd_counter += 1 
-
-
 	print ""
 
 #=========================================================================================
 # process data
 #=========================================================================================
+
 print "\nCalculating statistics..."
 get_sizes_sampled()
 update_color_dict()
