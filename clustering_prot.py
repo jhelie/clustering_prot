@@ -798,7 +798,7 @@ def identify_proteins():
 	global prot_index2specie, prot_index2sindex, prot_index2rel
 	prot_index2specie = {}
 	prot_index2rel = np.arange(0,nb_proteins)
-	prot_index2sindex = np.zeros(nb_proteins)
+	prot_index2sindex = np.zeros(nb_proteins, int)
 	for s_index in range(0, nb_species):
 		if s_index == 0:
 			p_start = 0
@@ -809,8 +809,8 @@ def identify_proteins():
 		for p_index in range(p_start, p_end):
 			prot_index2specie[p_index] = proteins_species[s_index]
 		prot_index2rel[p_start:p_end] -= p_start
-		prot_index2sindex[p_start:p_end] = int(s_index)
-
+		prot_index2sindex[p_start:p_end] = s_index
+	
 	return
 def identify_leaflets():
 	print "\nIdentifying leaflets..."
@@ -1292,7 +1292,7 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):				#DONE
 			#--------
 			else:
 				#initialise cluster comp and list of pairs treated
-				tmp_comp = (0,) * nb_species
+				tmp_comp = [0] * nb_species
 				tmp_pairs_treated = []
 				
 				#store size
@@ -1303,6 +1303,7 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):				#DONE
 					#retrieve details of current protein
 					p_s_index = prot_index2sindex[p_index]
 					p_specie = proteins_species[p_s_index]
+					
 					p_length = proteins_length[p_specie]
 					p_res_cog = []
 					for r in proteins_sele[p_specie][prot_index2rel[p_index]].residues:
@@ -1312,7 +1313,7 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):				#DONE
 					tmp_comp[p_s_index] += 1
 
 					#retrieve neighbours of current protein (remove itself)
-					tmp_neighb = nx.neighbors(p_index)
+					tmp_neighb = network.neighbors(p_index)
 					tmp_neighb.remove(p_index)
 					
 					#browse neighbours of current protein
@@ -1343,10 +1344,13 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):				#DONE
 							proteins_ctcts_prot[p_index, pp_index] += np.sum(dist_pp_p_matrix < 8)
 						
 							#store the fact that the pair p - pp has been treated
-							tmp_pairs_treated.append((min(p_index,pp_index),max(p_index,pp_index))
+							tmp_pairs_treated.append((min(p_index,pp_index),max(p_index,pp_index)))
+						else:
+							continue
 				
 				#store cluster composition
-				if c_size - 1 not in clusters_comp.keys():
+				tmp_comp = tuple(tmp_comp)
+				if (c_size - 1) not in clusters_comp.keys():
 					clusters_comp[c_size-1] = {}
 				if tmp_comp not in clusters_comp[c_size-1].keys():
 					clusters_comp[c_size-1][tmp_comp] = 0
