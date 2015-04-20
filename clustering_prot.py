@@ -799,6 +799,9 @@ def identify_proteins():
 	for s in proteins_species:
 		print "   " + str(s) + ": " + str(proteins_nb[s])
 
+	#create dictionaries
+	#===================
+	#NB: this assumes that the different protein species are sequentially present in the gro file (and not alternating for instance)
 	print " -creating dictionaries..."
 	global prot_index2specie, prot_index2sindex, prot_index2rel
 	prot_index2specie = {}
@@ -1545,8 +1548,8 @@ def write_warning():
 
 #2D heatmap for contacts between all proteins
 def graph_heatmap_2D_prot():
-	#create filenames
-	#----------------
+	#create filename
+	#---------------
 	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2D_heatmap_proteins.svg'
 
 	#create figure
@@ -1554,11 +1557,43 @@ def graph_heatmap_2D_prot():
 	fig, ax = plt.subplots()
 	fig.suptitle("Contacts between proteins")
 		
-	#plot data: %
-	#------------
-	plt.pcolormesh(proteins_ctcts_prot[:proteins_nb["A"],:], cmap = plt.cm.Greens)
-	plt.axis([0, nb_proteins,0, proteins_nb["A"]])
-	plt.vlines(proteins_nb["A"], 0, proteins_nb["A"], linestyles = 'dashdot')
+	#plot data
+	#---------
+	plt.pcolormesh(proteins_ctcts_prot, cmap = plt.cm.Greens)
+	plt.axis([0, nb_proteins,0, nb_proteins])
+	for s_index in range(0,nb_species):
+		s = proteins_species[s_index]
+		#homo interaction corner
+		if s_index == 0:
+			text = plt.text(proteins_nb[s]/float(2), proteins_nb[s]/float(2), str(s).upper() + "-" + str(s).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+			text.set_alpha(0.2)
+		else:
+			tmp_offset_s = 0
+			for ss_index in range(0, s_index):
+				tmp_offset_s += proteins_nb[proteins_species[ss_index]]
+			text = plt.text(tmp_offset_s + proteins_nb[s]/float(2), tmp_offset_s + proteins_nb[s]/float(2), str(s).upper() + "-" + str(s).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+			text.set_alpha(0.2)
+		#hetero interactions corner
+		for ss_index in range(s_index + 1, nb_species):
+			ss = proteins_species[ss_index]
+			s_prev = proteins_species[ss_index - 1]
+			tmp_offset_ss = 0
+			for sss_index in range(0, ss_index):
+				tmp_offset_ss += proteins_nb[proteins_species[sss_index]]
+			if s_index == 0:
+				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), proteins_nb[s]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+			else:
+				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), tmp_offset_s + proteins_nb[s]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+			text.set_alpha(0.2)
+			if s_index == 0:
+				text = plt.text(proteins_nb[s]/float(2), tmp_offset_ss + proteins_nb[ss]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+			else:
+				text = plt.text(tmp_offset_s + proteins_nb[s]/float(2), tmp_offset_ss + proteins_nb[ss]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+			text.set_alpha(0.2)
+	for s in proteins_species:
+		plt.vlines(proteins_nb[s], 0, nb_proteins, linestyles = 'dashed')
+		plt.hlines(proteins_nb[s], 0, nb_proteins, linestyles = 'dashed')
+	
 	#fontP.set_size("small")
 	#ax.legend(prop=fontP)
 	#plt.title("%", fontsize="small")
