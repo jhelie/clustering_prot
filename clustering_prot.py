@@ -1566,13 +1566,13 @@ def graph_heatmap_2D_prot():
 		#homo interaction corner
 		if s_index == 0:
 			text = plt.text(proteins_nb[s]/float(2), proteins_nb[s]/float(2), str(s).upper() + "-" + str(s).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
-			text.set_alpha(0.2)
+			text.set_alpha(0.1)
 		else:
 			tmp_offset_s = 0
 			for ss_index in range(0, s_index):
 				tmp_offset_s += proteins_nb[proteins_species[ss_index]]
 			text = plt.text(tmp_offset_s + proteins_nb[s]/float(2), tmp_offset_s + proteins_nb[s]/float(2), str(s).upper() + "-" + str(s).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
-			text.set_alpha(0.2)
+			text.set_alpha(0.1)
 		#hetero interactions corner
 		for ss_index in range(s_index + 1, nb_species):
 			ss = proteins_species[ss_index]
@@ -1584,21 +1584,19 @@ def graph_heatmap_2D_prot():
 				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), proteins_nb[s]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
 			else:
 				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), tmp_offset_s + proteins_nb[s]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
-			text.set_alpha(0.2)
+			text.set_alpha(0.1)
 			if s_index == 0:
 				text = plt.text(proteins_nb[s]/float(2), tmp_offset_ss + proteins_nb[ss]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
 			else:
 				text = plt.text(tmp_offset_s + proteins_nb[s]/float(2), tmp_offset_ss + proteins_nb[ss]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
-			text.set_alpha(0.2)
+			text.set_alpha(0.1)
 	for s in proteins_species:
 		plt.vlines(proteins_nb[s], 0, nb_proteins, linestyles = 'dashed')
 		plt.hlines(proteins_nb[s], 0, nb_proteins, linestyles = 'dashed')
 	
-	#fontP.set_size("small")
-	#ax.legend(prop=fontP)
-	#plt.title("%", fontsize="small")
-	#plt.xlabel('time (ns)', fontsize="small")
-	#plt.ylabel('% of proteins', fontsize="small")
+	plt.xlabel('protein index', fontsize="small")
+	plt.ylabel('protein index', fontsize="small")
+	#plt.colorbar()
 
 	#save figure
 	#-----------
