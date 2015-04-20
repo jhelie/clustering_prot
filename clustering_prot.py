@@ -1109,7 +1109,7 @@ def struct_proteins():
 	global proteins_ctcts_res
 	global proteins_ctcts_prot
 	global proteins_nb_neighbours
-	proteins_size = np.zeros((nb_frames_to_process, nb_proteins))
+	proteins_size = np.zeros((nb_frames_to_process, nb_proteins), int)
 	if args.cluster_groups_file != "no":
 		global proteins_group
 		proteins_group = np.zeros((nb_frames_to_process, nb_proteins))
@@ -1542,6 +1542,48 @@ def write_warning():
 	output_stat.close()
 	
 	return
+
+#2D heatmap for contacts between all proteins
+def graph_heatmap_2D_prot():
+	#create filenames
+	#----------------
+	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2D_heatmap_proteins.svg'
+
+	#create figure
+	#-------------
+	fig, ax = plt.subplots()
+	fig.suptitle("Contacts between proteins")
+		
+	#plot data: %
+	#------------
+	plt.pcolormesh(proteins_ctcts_prot[:proteins_nb["A"],:], cmap = plt.cm.Greens)
+	plt.axis([0, nb_proteins,0, proteins_nb["A"]])
+	plt.vlines(proteins_nb["A"], 0, proteins_nb["A"], linestyles = 'dashdot')
+	#fontP.set_size("small")
+	#ax.legend(prop=fontP)
+	#plt.title("%", fontsize="small")
+	#plt.xlabel('time (ns)', fontsize="small")
+	#plt.ylabel('% of proteins', fontsize="small")
+
+	#save figure
+	#-----------
+	ax.spines['top'].set_visible(False)
+	ax.spines['right'].set_visible(False)
+	ax.xaxis.set_ticks_position('bottom')
+	ax.yaxis.set_ticks_position('left')
+	#ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
+	#ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+	plt.setp(ax.xaxis.get_majorticklabels(), fontsize="small" )
+	plt.setp(ax.yaxis.get_majorticklabels(), fontsize="small" )
+	#plt.subplots_adjust(top=0.9, bottom=0.07, hspace=0.37, left=0.09, right=0.96)
+	fig.savefig(filename_svg)
+	plt.close()	
+	return
+
+#2D heatmap of contacts between species: residues level
+def graph_heatmap_2D_res():
+	return
+
 
 #sizes
 def write_xvg_biggest():
@@ -2484,7 +2526,7 @@ def write_frame_snapshot(f_index, f_t):									#DONE
 	if args.cluster_groups_file != "no":
 		#store cluster info in beta factor field
 		for p_index in range(0, nb_proteins):
-				proteins_sele[p_index].set_bfactor(proteins_cluster_status_groups[p_index,f_index])
+				proteins_sele[prot_index2specie[p_index]][prot_index2rel[p_index]].set_bfactor(proteins_groups[f_index, p_index])
 		
 		#write annotated file
 		if args.xtcfilename == "no":
@@ -2535,16 +2577,16 @@ def write_frame_annotation(f_index, f_t):								#DONE
 		#output VMD protein selection line
 		tmp_prot_sele = ""
 		for p_index in range(0, nb_proteins):
-			tmp_prot_sele += "." + proteins_sele_string_VMD[p_index]
+			tmp_prot_sele += "." + proteins_sele_string_VMD[prot_index2specie[p_index]][prot_index2rel[p_index]]
 		output_stat.write(tmp_prot_sele[1:] + "\n")
 		
 		#ouput min and max size
-		output_stat.write(str(np.min(proteins_cluster_status_groups[:,f_index])) + "." + str(np.max(proteins_cluster_status_groups[:,f_index])) + "\n")
+		output_stat.write(str(np.min(proteins_group[f_index,:])) + "." + str(np.max(proteins_group[f_index,:])) + "\n")
 		
 		#ouptut cluster size for each protein
 		tmp_groups = "1"
 		for p_index in range(0, nb_proteins):
-			tmp_groups += "." + str(proteins_cluster_status_groups[p_index,f_index])
+			tmp_groups += "." + str(proteins_groups[f_index, p_index])
 		output_stat.write(tmp_groups + "\n")
 		output_stat.close()
 	
@@ -2715,6 +2757,8 @@ calculate_statistics()
 # produce outputs
 #=========================================================================================
 print "\nWriting outputs..."
+
+graph_heatmap_2D_prot()
 
 #case: gro file
 #==============
