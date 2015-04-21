@@ -1359,7 +1359,7 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 						proteins_ctcts_res[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][dist_p_pp_matrix < args.contact_res] += 1
 						
 						#store total contacts with neighbour
-						proteins_ctcts_prot[min(p_index, pp_index), max(p_index, pp_index)] += np.sum(dist_p_pp_matrix < args.contact_res)
+						proteins_ctcts_prot[p_index, pp_index] += np.sum(dist_p_pp_matrix < args.contact_res)
 						
 						#store same info from the neighbour's perspective
 						proteins_nb_neighbours[f_index, pp_index, p_s_index] += 1
@@ -1516,6 +1516,15 @@ def calculate_statistics():
 		clusters_mostrep['pc'][f_index] = tmp_mostrep_pc		
 		clusters_mostrep['size'][f_index] = tmp_mostrep_size			
 
+	#contacts between prots
+	#----------------------
+	#for each protein normalise the number of contacts with other proteins byt the total number of contacts formed by this protein
+	#this breaks the symmetry
+	for p_index in range(0, nb_proteins):
+		tmp_sum = np.sum(proteins_ctcts_prot[:,p_index])
+		if tmp_sum > 0:
+			proteins_ctcts_prot[:,p_index] /= float(tmp_sum)
+	
 	return
 
 #=========================================================================================
@@ -1580,11 +1589,13 @@ def graph_heatmap_2D_prot():
 			tmp_offset_ss = 0
 			for sss_index in range(0, ss_index):
 				tmp_offset_ss += proteins_nb[proteins_species[sss_index]]
+			#horizontal
 			if s_index == 0:
-				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), proteins_nb[s]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), proteins_nb[s]/float(2), str(ss).upper() + "-" + str(s).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
 			else:
-				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), tmp_offset_s + proteins_nb[s]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), tmp_offset_s + proteins_nb[s]/float(2), str(ss).upper() + "-" + str(s).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
 			text.set_alpha(0.1)
+			#vertical
 			if s_index == 0:
 				text = plt.text(proteins_nb[s]/float(2), tmp_offset_ss + proteins_nb[ss]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
 			else:
@@ -1596,7 +1607,7 @@ def graph_heatmap_2D_prot():
 	
 	plt.xlabel('protein index', fontsize="small")
 	plt.ylabel('protein index', fontsize="small")
-	#plt.colorbar()
+	plt.colorbar()
 
 	#save figure
 	#-----------
