@@ -1564,7 +1564,7 @@ def graph_heatmap_2D_prot():
 	#create figure
 	#-------------
 	fig, ax = plt.subplots()
-	fig.suptitle("Contacts between proteins")
+	fig.suptitle("Distribution of contacts between proteins")
 		
 	#plot data
 	#---------
@@ -1606,7 +1606,7 @@ def graph_heatmap_2D_prot():
 		plt.hlines(proteins_nb[s], 0, nb_proteins, linestyles = 'dashed')
 	
 	plt.xlabel('protein index', fontsize="small")
-	plt.ylabel('protein index', fontsize="small")
+	plt.ylabel('index of proteins interacted with', fontsize="small")
 	plt.colorbar()
 
 	#save figure
@@ -1626,8 +1626,50 @@ def graph_heatmap_2D_prot():
 
 #2D heatmap of contacts between species: residues level
 def graph_heatmap_2D_res():
-	return
+	for s_index1 in range(0,nb_species):
+		s1 = proteins_species[s_index1]
+		for s_index2 in range(s_index1, nb_species):
+			s2 = proteins_species[s_index2]
 
+			#only plot if contact between the 2 species occured
+			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:
+			
+				#create filename
+				#---------------
+				filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2D_heatmap_residues_' + str(s1).upper() + '-' + str(s2).upper() + '.svg'
+			
+				#create figure
+				#-------------
+				fig, ax = plt.subplots()
+				fig.suptitle("Contacts between species " + str(s1).upper() + "-" + str(s2).upper())
+					
+				#plot data
+				#---------
+				#debug
+				print s1, s2
+				print np.shape(proteins_ctcts_res[s_index1,s_index2])
+				
+				plt.pcolormesh(proteins_ctcts_res[s_index1,s_index2][proteins_ctcts_res[s_index1,s_index2] > 1], cmap = plt.cm.Greens)
+				#plt.axis([0, proteins_length[s2],0, proteins_length[s2]])
+				
+				plt.xlabel('residues ' + str(s2).upper(), fontsize="small")
+				plt.ylabel('residues ' + str(s1).upper(), fontsize="small")
+				plt.colorbar()
+			
+				#save figure
+				#-----------
+				ax.spines['top'].set_visible(False)
+				ax.spines['right'].set_visible(False)
+				ax.xaxis.set_ticks_position('bottom')
+				ax.yaxis.set_ticks_position('left')
+				#ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
+				#ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+				plt.setp(ax.xaxis.get_majorticklabels(), fontsize="small" )
+				plt.setp(ax.yaxis.get_majorticklabels(), fontsize="small" )
+				#plt.subplots_adjust(top=0.9, bottom=0.07, hspace=0.37, left=0.09, right=0.96)
+				fig.savefig(filename_svg)
+				plt.close()	
+	return
 
 #sizes
 def write_xvg_biggest():
@@ -2803,6 +2845,7 @@ calculate_statistics()
 print "\nWriting outputs..."
 
 graph_heatmap_2D_prot()
+graph_heatmap_2D_res()
 
 #case: gro file
 #==============
