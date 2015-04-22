@@ -204,6 +204,7 @@ Lipids identification (see note 2)
 
 Protein clusters identification
 -----------------------------------------------------
+--species		: file defining name,multiplicity and sequence of protenis, see note 6
 --groups		: cluster groups definition file, see note 4 [BETA]
 --contact_res	8	: cutoff to consider contacts between residues c.o.g (Angstrom)
 --colours_sizes	1,9	: range of cluster sizes to colour, see note 5
@@ -235,6 +236,7 @@ parser.add_argument('--leaflets', nargs=1, dest='cutoff_leaflet', default=['opti
 parser.add_argument('--use_gro', dest='use_gro', action='store_true', help=argparse.SUPPRESS)
 
 #protein clusters identification
+parser.add_argument('--species', nargs=1, dest='species_file', default=['no'], help=argparse.SUPPRESS)
 parser.add_argument('--groups', nargs=1, dest='cluster_groups_file', default=['no'], help=argparse.SUPPRESS)
 parser.add_argument('--contact_res', nargs=1, dest='contact_res', default=[8], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--colours_sizes', nargs=1, dest='colours_sizes', default=['1,9'], help=argparse.SUPPRESS)
@@ -490,6 +492,10 @@ else:
 		shutil.copy2(args.beadsfilename,args.output_folder + "/")
 
 ##########################################################################################
+# DICTIONARIES
+##########################################################################################
+
+##########################################################################################
 # FUNCTIONS DEFINITIONS
 ##########################################################################################
 
@@ -497,6 +503,53 @@ else:
 # data loading
 #=========================================================================================
 
+def set_proteins_database():
+	global proteins_db_sequences
+	global proteins_db_multiplicity
+	global res_code_3to1
+
+	res_code_3to1 = {}
+	res_code_3to1['ALA'] = 'A'
+	res_code_3to1['ARG'] = 'R'
+	res_code_3to1['ASN'] = 'N'
+	res_code_3to1['ASP'] = 'D'
+	res_code_3to1['CYS'] = 'C'
+	res_code_3to1['GLU'] = 'E'
+	res_code_3to1['GLN'] = 'Q'
+	res_code_3to1['GLY'] = 'G'
+	res_code_3to1['HIS'] = 'H'
+	res_code_3to1['ILE'] = 'I'
+	res_code_3to1['LEU'] = 'L'
+	res_code_3to1['LYS'] = 'K'
+	res_code_3to1['MET'] = 'M'
+	res_code_3to1['PHE'] = 'F'
+	res_code_3to1['PRO'] = 'P'
+	res_code_3to1['SER'] = 'S'
+	res_code_3to1['THR'] = 'T'
+	res_code_3to1['TRP'] = 'W'
+	res_code_3to1['TYR'] = 'Y'
+	res_code_3to1['VAL'] = 'V'
+	
+	proteins_db_sequences = {}
+	proteins_db_sequences["OmpF"] = 'AEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQF'
+	proteins_db_sequences["BtuB"] = 'QDTSPDTLVVTANRFEQPRSTVLAPTTVVTRQDIDRWQSTSVNDVLRRLPGVDITQNGGSGQLSSIFIRGTNASHVLVLIDGVRLNLAGVSGSADLSQFPIALVQRVEYIRGPRSAVYGSDAIGGVVNIITTRDEPGTEISAGWGSNSYQNYDVSTQQQLGDKTRVTLLGDYAHTHGYDVVAYGNTGTQAQTDNDGFLSKTLYGALEHNFTDAWSGFVRGYGYDNRTNYDAYYSPGSPLLDTRKLYSQSWDAGLRYNGELIKSQLITSYSHSKDYNYDPHYGRYDSSATLDEMKQYTVQWANNVIVGHGSIGAGVDWQKQTTTPGTGYVEDGYDQRNTGIYLTGLQQVGDFTFEGAARSDDNSQFGRHGTWQTSAGWEFIEGYRFIASYGTSYKAPNLGQLYGFYGNPNLDPEKSKQWEGAFEGLTAGVNWRISGYRNDVSDLIDYDDHTLKYYNEGKARIKGVEATANFDTGPLTHTVSYDYVDARNAITDTPLLRRAKQQVKYQLDWQLYDFDWGITYQYLGTRYDKDYSSYPYQTVKMGGVSLWDLAVAYPVTSHLTVRGKIANLFDKDYETVYGYQTAGREYTLSGSYTF'
+	
+	proteins_db_multiplicity = {}
+	proteins_db_multiplicity["OmpF"] = 3
+	proteins_db_multiplicity["BtuB"] = 1
+	
+	#TO DO:
+	#read a file provided by the user via --proteins
+	#format should name,mulitplicity,1_letter_sequence
+
+	return
+def get_sequence(seq3):
+	
+	seq1 = ""
+	for r in seq3:
+		seq1 += res_code_3to1[r]
+	
+	return seq1
 def set_lipids_beads():
 
 	global leaflet_sele_string
@@ -687,15 +740,20 @@ def identify_proteins():
 	#declare variables
 	global proteins_nb
 	global proteins_sele
-	global proteins_sele_string_VMD
-	global proteins_residues
+	global proteins_names
 	global proteins_length
 	global proteins_species
+	global proteins_residues
+	global proteins_multiplicity
+	global proteins_sele_string_VMD	
+
 	proteins_nb = {}
 	proteins_sele = {}
-	proteins_residues = {}
+	proteins_names = {}
 	proteins_length = {}
 	proteins_species = []
+	proteins_residues = {}
+	proteins_multiplicity = {}
 	proteins_sele_string_VMD = {}
 
 	#check for protein presence
@@ -709,7 +767,7 @@ def identify_proteins():
 	tmp_a = proteins_sele["all"][0]
 	tmp_resnames = proteins_sele["all"].resnames()
 	first_resnum = tmp_a.resnum
-	prev_resnum = tmp_a.resnum
+	prev_resnum_abs = tmp_a.resnum
 	prev_atom_nb = tmp_a.number + 1
 	last_resnum = tmp_a.resnum
 	last_atom_nb = tmp_a.number + 1
@@ -722,18 +780,19 @@ def identify_proteins():
 		#-------------------------------------------------------
 		delta_resnum = a.resnum - last_resnum
 		delta_atom_nb = a.number + 1 - last_atom_nb
-		
+				
 		#check if new protein
 		#--------------------
 		if delta_resnum < 0 or a.segid != last_segid or delta_atom_nb > 1:
+						
 			#get composition
-			tmp_comp = tmp_resnames[(prev_resnum - first_resnum):(last_resnum - first_resnum)].tolist()
+			tmp_comp = tmp_resnames[(prev_resnum_abs - first_resnum):(last_resnum_abs - first_resnum)].tolist()
 						
 			#compare to existing species composition
 			if proteins_nb["all"] == 0:
 				tmp_specie = "A"
 			else:
-				tmp_specie = chr(ord(proteins_species[-1]) + 1)				
+				tmp_specie = chr(ord(proteins_species[-1]) + 1)
 				for k in proteins_residues.keys():
 					if tmp_comp == proteins_residues[k]:
 						tmp_specie = k
@@ -757,18 +816,19 @@ def identify_proteins():
 			#update number of proteins and counters
 			proteins_nb[tmp_specie] += 1
 			proteins_nb["all"] += 1
-			prev_resnum = a.resnum
+			prev_resnum_abs += proteins_length[tmp_specie]
 			prev_atom_nb = a.number + 1
 	
 		#update residue/atom numbers
 		#---------------------------
 		last_resnum = a.resnum
+		last_resnum_abs = prev_resnum_abs + a.resnum
 		last_atom_nb = a.number + 1
-		last_segid = a.segid		
+		last_segid = a.segid
 	
 	#add last protein
 	#================
-	tmp_comp = tmp_resnames[(prev_resnum - first_resnum):(last_resnum - first_resnum)].tolist()
+	tmp_comp = tmp_resnames[(prev_resnum_abs - first_resnum):(last_resnum_abs - first_resnum)].tolist()
 	if proteins_nb["all"] == 0:
 		tmp_specie = "A"
 	else:
@@ -783,12 +843,28 @@ def identify_proteins():
 		proteins_sele[tmp_specie] = {}
 		proteins_sele_string_VMD[tmp_specie] = {}
 		proteins_residues[tmp_specie] = tmp_comp
-		proteins_length[tmp_specie] = last_resnum - prev_resnum
-	proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))
-	proteins_sele_string_VMD[tmp_specie][proteins_nb[tmp_specie]] = "serial " + str(prev_atom_nb) + " to " + str(last_atom_nb)
+		proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))
+		proteins_sele_string_VMD[tmp_specie][proteins_nb[tmp_specie]] = "serial " + str(prev_atom_nb) + " to " + str(last_atom_nb)
+		proteins_length[tmp_specie] = proteins_sele[tmp_specie][proteins_nb[tmp_specie]].numberOfResidues()
+	else:
+		proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))
+		proteins_sele_string_VMD[tmp_specie][proteins_nb[tmp_specie]] = "serial " + str(prev_atom_nb) + " to " + str(last_atom_nb)
 	proteins_nb[tmp_specie] += 1
 	proteins_nb["all"] += 1
 
+	#check if some the proteins are known
+	#====================================
+	#debug
+	print proteins_species
+	for s in proteins_species:
+		proteins_names[s] = s
+		proteins_multiplicity[s] = 1
+		s_seq = get_sequence(proteins_residues[s])
+		for name, seq in proteins_db_sequences.items():
+			if s_seq == seq:
+				proteins_names[s] = name
+				proteins_multiplicity[s] = proteins_db_multiplicity[name]
+	
 	#display results
 	#================
 	global nb_species, nb_proteins
@@ -797,7 +873,7 @@ def identify_proteins():
 	print " -found", nb_proteins, "proteins"
 	print " -found", nb_species, "species"
 	for s in proteins_species:
-		print "   " + str(s) + ": " + str(proteins_nb[s])
+		print "   " + str(proteins_names[s]) + ": " + str(proteins_nb[s])
 
 	#create dictionaries
 	#===================
@@ -1525,6 +1601,25 @@ def calculate_statistics():
 		if tmp_sum > 0:
 			proteins_ctcts_prot[:,p_index] /= float(tmp_sum)
 	
+	return
+def process_oligomers():
+
+	#global proteins_ctcts_res
+	#proteins_ctcts_res_monomers = {}
+	#for s_index1 in range(0,nb_species):
+		#for s_index2 in range(s_index1, nb_species):
+			#proteins_ctcts_res[s_index1, s_index2] = np.zeros((proteins_length[proteins_species[s_index1]], proteins_length[proteins_species[s_index2]]))
+
+	#global proein
+
+	#proteins_ctcts_res[A, B] = np.zeros((proteins_length[A], proteins_length[B]/3))
+
+	#proteins_ctcts_res[A, B] = proteins_ctcts_res[A, B][:,:n1] + proteins_ctcts_res[A, B][:,n1:n2] + proteins_ctcts_res[A, B][:,n2:]
+
+	#proteins_ctcts_res[B, B] = proteins_ctcts_res[B,B][:n1,:n1] + proteins_ctcts_res[B,B][:n1,n1:n2] + proteins_ctcts_res[A,B][:n1,n2:] + proteins_ctcts_res[B,B][:n1,:n1] + proteins_ctcts_res[B,B][:n1,n1:n2] + proteins_ctcts_res[A,B][:n1,n2:]
+
+	#proteins_ctcts_res[s_index1, s_index2] = np.zeros((proteins_length[proteins_species[s_index1]], proteins_length[proteins_species[s_index2]]))
+
 	return
 
 #=========================================================================================
@@ -2739,6 +2834,7 @@ def write_xtc_annotation(action):										#DONE
 #process inputs
 #=========================================================================================
 
+set_proteins_database()
 set_lipids_beads()
 load_MDA_universe()
 if args.selection_file_ff != "no":
@@ -2845,7 +2941,7 @@ calculate_statistics()
 print "\nWriting outputs..."
 
 graph_heatmap_2D_prot()
-graph_heatmap_2D_res()
+#graph_heatmap_2D_res()
 
 #case: gro file
 #==============
