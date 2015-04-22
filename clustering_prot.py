@@ -182,7 +182,21 @@ The following python modules are needed :
     In case a colour map is used, its name must be specified as the colour for each lipid
     specie or size group.
 
-
+5. The script automatically detects proteins and, by default, groups them into species labelled
+   'A', 'B', etc... based on sequences. Oligomers, ie proteins made up of the repeat of a
+   same sequence, are not detected by default and just considered as a protein with the overall
+   sequence which can effectively decrease your sampling of contacts on heatmaps representing
+   residues interactions.
+   The --species flag allows to specify flag to name proteins and address the oligomer issue.
+   Each line of this file should follow the format (without the quotes):
+    ->'name,multiplicity,sequence'
+    
+   with the multiplicity referring to the number of times the sequence appears. So, in the
+   case of, say, a trimer 'multiplicity' can be set to 3 with 'sequence' corresponding to
+   the sequence of a monomer. For proteins which do not involve the repetition of a base
+   unit 'multiplicity' should be 1 and 'sequence' the complete protein sequence.
+   1 letter code should be used for sequence.
+   
 [ USAGE ]
 
 Option	      Default  	Description                    
@@ -271,6 +285,7 @@ args.beadsfilename = args.beadsfilename[0]
 args.cutoff_leaflet = args.cutoff_leaflet[0]
 args.selection_file_ff = args.selection_file_ff[0]
 #protein clusters identification
+args.species_file = args.species_file[0]
 args.cluster_groups_file = args.cluster_groups_file[0]
 args.contact_res = args.contact_res[0]
 args.colours_sizes = args.colours_sizes[0]
@@ -384,6 +399,9 @@ if args.cluster_groups_file != "no" and not os.path.isfile(args.cluster_groups_f
 if args.selection_file_ff != "no" and not os.path.isfile(args.selection_file_ff):
 	print "Error: file " + str(args.selection_file_ff) + " not found."
 	sys.exit(1)
+if args.species_file != "no" and not os.path.isfile(args.species_file):
+	print "Error: file " + str(args.species_file) + " not found."
+	sys.exit(1)
 if args.beadsfilename != "no" and not os.path.isfile(args.beadsfilename):
 	print "Error: file " + str(args.beadsfilename) + " not found."
 	sys.exit(1)
@@ -476,7 +494,7 @@ else:
 	output_log=open(filename_log, 'w')		
 	output_log.write("[clustering_prot v" + str(version_nb) + "]\n")
 	output_log.write("\nThis folder and its content were created using the following command:\n\n")
-	tmp_log="python clustering_prot.py"
+	tmp_log = "python clustering_prot.py"
 	for c in sys.argv[1:]:
 		tmp_log+=" " + c
 	output_log.write(tmp_log + "\n")
@@ -488,6 +506,8 @@ else:
 		shutil.copy2(args.selection_file_ff,args.output_folder + "/")	
 	if args.cluster_groups_file != "no":
 		shutil.copy2(args.cluster_groups_file,args.output_folder + "/")
+	if args.species_file != "no":
+		shutil.copy2(args.species_file,args.output_folder + "/")
 	if args.beadsfilename != "no":
 		shutil.copy2(args.beadsfilename,args.output_folder + "/")
 
@@ -531,24 +551,64 @@ def set_proteins_database():
 	res_code_3to1['VAL'] = 'V'
 	
 	proteins_db_sequences = {}
-	proteins_db_sequences["OmpF"] = 'AEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQF'
+	#proteins_db_sequences["OmpF"] = 'AEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQF'
 	proteins_db_sequences["BtuB"] = 'QDTSPDTLVVTANRFEQPRSTVLAPTTVVTRQDIDRWQSTSVNDVLRRLPGVDITQNGGSGQLSSIFIRGTNASHVLVLIDGVRLNLAGVSGSADLSQFPIALVQRVEYIRGPRSAVYGSDAIGGVVNIITTRDEPGTEISAGWGSNSYQNYDVSTQQQLGDKTRVTLLGDYAHTHGYDVVAYGNTGTQAQTDNDGFLSKTLYGALEHNFTDAWSGFVRGYGYDNRTNYDAYYSPGSPLLDTRKLYSQSWDAGLRYNGELIKSQLITSYSHSKDYNYDPHYGRYDSSATLDEMKQYTVQWANNVIVGHGSIGAGVDWQKQTTTPGTGYVEDGYDQRNTGIYLTGLQQVGDFTFEGAARSDDNSQFGRHGTWQTSAGWEFIEGYRFIASYGTSYKAPNLGQLYGFYGNPNLDPEKSKQWEGAFEGLTAGVNWRISGYRNDVSDLIDYDDHTLKYYNEGKARIKGVEATANFDTGPLTHTVSYDYVDARNAITDTPLLRRAKQQVKYQLDWQLYDFDWGITYQYLGTRYDKDYSSYPYQTVKMGGVSLWDLAVAYPVTSHLTVRGKIANLFDKDYETVYGYQTAGREYTLSGSYTF'
 	
 	proteins_db_multiplicity = {}
-	proteins_db_multiplicity["OmpF"] = 3
+	#proteins_db_multiplicity["OmpF"] = 3
 	proteins_db_multiplicity["BtuB"] = 1
 	
-	#TO DO:
-	#read a file provided by the user via --proteins
-	#format should name,mulitplicity,1_letter_sequence
+	if args.species_file != "no":
+		print "\nReading species definition file..."
+		with open(args.species_file) as f:
+			lines = f.readlines()
+		print ' -found ' + str(len(lines)) + ' species defintion'
+		nb_lines = len(lines)
+		for l_index in range(0,nb_lines):
+			#get current line
+			line = lines[l_index]
+						
+			#check format
+			if line[-1] == "\n":
+				line = line[:-1]
+			l_content = line.split(',')
+			if len(l_content) != 3:
+				print "Error: the format of line " + str(l_index + 1) + " should be 'name,multiplicity,sequence' (see clustering_prot --help, note 6)."
+				print "->", line
+				sys.exit(1)
+			else:
+				tmp_name = l_content[0]
+				tmp_mult = int(l_content[1])
+				tmp_seq = l_content[2]
+
+			#display update
+			progress='\r -creating species entries: ' + str(tmp_name) + '        '
+			sys.stdout.flush()
+			sys.stdout.write(progress)
+
+			if tmp_name in proteins_db_sequences.keys():
+				print "Error: a specie named " + str(tmp_name) + " is already defined."
+				print "->", line
+				sys.exit(1)
+			elif tmp_mult == 0:
+				print "Error: multiplicity should be greater or equal to 1."
+				print "->", line
+				sys.exit(1)
+			else:
+				proteins_db_sequences[tmp_name] = tmp_seq*tmp_mult
+				proteins_db_multiplicity[tmp_name] = tmp_mult
+		print ""
 
 	return
 def get_sequence(seq3):
 	
 	seq1 = ""
 	for r in seq3:
-		seq1 += res_code_3to1[r]
-	
+		try:
+			seq1 += res_code_3to1[r]
+		except:
+			print "Warning: unknown residue code '" + str(r) 
+			
 	return seq1
 def set_lipids_beads():
 
@@ -854,8 +914,6 @@ def identify_proteins():
 
 	#check if some the proteins are known
 	#====================================
-	#debug
-	print proteins_species
 	for s in proteins_species:
 		proteins_names[s] = s
 		proteins_multiplicity[s] = 1
