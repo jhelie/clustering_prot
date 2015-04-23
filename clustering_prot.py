@@ -1672,13 +1672,15 @@ def process_oligomers():
 	proteins_ctcts_res_new = {}
 	for s_index1 in range(0,nb_species):
 		s1 = proteins_species[s_index1]
+		#case: s1 is an oligomer
+		#-----------------------
 		if proteins_multiplicity[s1] > 1:
 			proteins_length[s1] = int(len(proteins_residues[s1])/float(proteins_multiplicity[s1]))
 			for s_index2 in range(s_index1, nb_species):
 				s2 = proteins_species[s_index2]
-				#case: s2 also is an oligomer
+				#case: s2 is an oligomer
 				if proteins_multiplicity[s2] > 1:
-					proteins_length[s2] = int(len(proteins_residues[s1])/float(proteins_multiplicity[s1]))
+					proteins_length[s2] = int(len(proteins_residues[s2])/float(proteins_multiplicity[s2]))
 					proteins_ctcts_res_new[s_index1, s_index2] = np.zeros((proteins_length[s1], proteins_length[s2]))
 					for n1 in range(0, proteins_multiplicity[s1]):
 						for n2 in range(0, proteins_multiplicity[s2]):
@@ -1690,6 +1692,24 @@ def process_oligomers():
 					for n1 in range(0, proteins_multiplicity[s1]):
 						proteins_ctcts_res_new[s_index1, s_index2] += proteins_ctcts_res[s_index1, s_index2][n1*proteins_length[s1]:(n1+1)*proteins_length[s1], :]
 		
+		#case: s1 isn't an oligomer
+		#--------------------------
+		else:
+			for s_index2 in range(s_index1, nb_species):
+				s2 = proteins_species[s_index2]
+				#case: s2 is an oligomer
+				if proteins_multiplicity[s2] > 1:
+					proteins_length[s2] = int(len(proteins_residues[s2])/float(proteins_multiplicity[s2]))
+					proteins_ctcts_res_new[s_index1, s_index2] = np.zeros((proteins_length[s1], proteins_length[s2]))
+					for n2 in range(0, proteins_multiplicity[s2]):
+						proteins_ctcts_res_new[s_index1, s_index2] += proteins_ctcts_res[s_index1, s_index2][:, n2*proteins_length[s2]:(n2+1)*proteins_length[s2]]
+				
+				#case: s2 isn't an oligomer
+				else:
+					proteins_ctcts_res_new[s_index1, s_index2] = np.zeros((proteins_length[s1], proteins_length[s2]))
+					proteins_ctcts_res_new[s_index1, s_index2] += proteins_ctcts_res[s_index1, s_index2][:, :]
+			
+	
 	#update global interaction matrix
 	#debug
 	print "before", proteins_ctcts_res
