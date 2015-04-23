@@ -216,11 +216,12 @@ Lipids identification (see note 2)
 --leaflets	optimise: leaflet identification 'optimise', 'large', 'no' or float, see note 2(b)
 --use_gro		: use gro file instead of xtc, see note 2(b)
 
-Protein clusters identification
+Proteins properties
 -----------------------------------------------------
 --species		: file defining name,multiplicity and sequence of protenis, see note 6
 --groups		: cluster groups definition file, see note 4 [BETA]
---contact_res	8	: cutoff to consider contacts between residues c.o.g (Angstrom)
+--res_contact	8	: cutoff to consider contacts between residues c.o.g (Angstrom)
+--res_show	0.1	: show all residues interactions accounting for at least that much contacts between proteins (%)
 --colours_sizes	1,9	: range of cluster sizes to colour, see note 5
 --algorithm	min	: 'cog','min' or 'density', see 'DESCRIPTION'
 --nx_cutoff 	8	: networkX cutoff distance for protein-protein contact (Angstrom)
@@ -252,7 +253,8 @@ parser.add_argument('--use_gro', dest='use_gro', action='store_true', help=argpa
 #protein clusters identification
 parser.add_argument('--species', nargs=1, dest='species_file', default=['no'], help=argparse.SUPPRESS)
 parser.add_argument('--groups', nargs=1, dest='cluster_groups_file', default=['no'], help=argparse.SUPPRESS)
-parser.add_argument('--contact_res', nargs=1, dest='contact_res', default=[8], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--res_contact', nargs=1, dest='res_contact', default=[8], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--res_show', nargs=1, dest='res_show', default=[0.1], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--colours_sizes', nargs=1, dest='colours_sizes', default=['1,9'], help=argparse.SUPPRESS)
 parser.add_argument('--algorithm', dest='m_algorithm', choices=['cog','min','density'], default='cog', help=argparse.SUPPRESS)
 parser.add_argument('--nx_cutoff', nargs=1, dest='cutoff_connect', default=[8], type=float, help=argparse.SUPPRESS)
@@ -287,7 +289,8 @@ args.selection_file_ff = args.selection_file_ff[0]
 #protein clusters identification
 args.species_file = args.species_file[0]
 args.cluster_groups_file = args.cluster_groups_file[0]
-args.contact_res = args.contact_res[0]
+args.res_contact = args.res_contact[0]
+args.res_show = args.res_show[0]/float(100)
 args.colours_sizes = args.colours_sizes[0]
 args.cutoff_connect = args.cutoff_connect[0]
 args.dbscan_dist = args.dbscan_dist[0]
@@ -1494,14 +1497,14 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 							dist_p_pp_matrix = MDAnalysis.analysis.distances.distance_array(np.asarray(p_res_cog), np.asarray(pp_res_cog), box_dim)
 						else:
 							dist_p_pp_matrix = MDAnalysis.analysis.distances.distance_array(np.asarray(pp_res_cog), np.asarray(p_res_cog), box_dim)
-						proteins_ctcts_res[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][dist_p_pp_matrix < args.contact_res] += 1
+						proteins_ctcts_res[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][dist_p_pp_matrix < args.res_contact] += 1
 						
 						#store total contacts with neighbour
-						proteins_ctcts_prot[p_index, pp_index] += np.sum(dist_p_pp_matrix < args.contact_res)
+						proteins_ctcts_prot[p_index, pp_index] += np.sum(dist_p_pp_matrix < args.res_contact)
 						
 						#store same info from the neighbour's perspective
 						proteins_nb_neighbours[f_index, pp_index, p_s_index] += 1
-						proteins_ctcts_prot[pp_index, p_index] += np.sum(dist_p_pp_matrix < args.contact_res)
+						proteins_ctcts_prot[pp_index, p_index] += np.sum(dist_p_pp_matrix < args.res_contact)
 					
 						#store the fact that the pair p - pp has been treated
 						tmp_pairs_treated.append((min(p_index,pp_index),max(p_index,pp_index)))
