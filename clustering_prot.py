@@ -551,11 +551,11 @@ def set_proteins_database():
 	res_code_3to1['VAL'] = 'V'
 	
 	proteins_db_sequences = {}
-	#proteins_db_sequences["OmpF"] = 'AEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQF'
+	proteins_db_sequences["OmpF"] = 'AEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQF'
 	proteins_db_sequences["BtuB"] = 'QDTSPDTLVVTANRFEQPRSTVLAPTTVVTRQDIDRWQSTSVNDVLRRLPGVDITQNGGSGQLSSIFIRGTNASHVLVLIDGVRLNLAGVSGSADLSQFPIALVQRVEYIRGPRSAVYGSDAIGGVVNIITTRDEPGTEISAGWGSNSYQNYDVSTQQQLGDKTRVTLLGDYAHTHGYDVVAYGNTGTQAQTDNDGFLSKTLYGALEHNFTDAWSGFVRGYGYDNRTNYDAYYSPGSPLLDTRKLYSQSWDAGLRYNGELIKSQLITSYSHSKDYNYDPHYGRYDSSATLDEMKQYTVQWANNVIVGHGSIGAGVDWQKQTTTPGTGYVEDGYDQRNTGIYLTGLQQVGDFTFEGAARSDDNSQFGRHGTWQTSAGWEFIEGYRFIASYGTSYKAPNLGQLYGFYGNPNLDPEKSKQWEGAFEGLTAGVNWRISGYRNDVSDLIDYDDHTLKYYNEGKARIKGVEATANFDTGPLTHTVSYDYVDARNAITDTPLLRRAKQQVKYQLDWQLYDFDWGITYQYLGTRYDKDYSSYPYQTVKMGGVSLWDLAVAYPVTSHLTVRGKIANLFDKDYETVYGYQTAGREYTLSGSYTF'
 	
 	proteins_db_multiplicity = {}
-	#proteins_db_multiplicity["OmpF"] = 3
+	proteins_db_multiplicity["OmpF"] = 3
 	proteins_db_multiplicity["BtuB"] = 1
 	
 	if args.species_file != "no":
@@ -806,6 +806,7 @@ def identify_proteins():
 	global proteins_residues
 	global proteins_multiplicity
 	global proteins_sele_string_VMD	
+	global pres_oligomers
 
 	proteins_nb = {}
 	proteins_sele = {}
@@ -815,6 +816,7 @@ def identify_proteins():
 	proteins_residues = {}
 	proteins_multiplicity = {}
 	proteins_sele_string_VMD = {}
+	pres_oligomers = False
 
 	#check for protein presence
 	proteins_nb["all"] = 0
@@ -916,12 +918,14 @@ def identify_proteins():
 	#====================================
 	for s in proteins_species:
 		proteins_names[s] = s
-		proteins_multiplicity[s] = 1
+		proteins_multiplicity[s] = int(1)
 		s_seq = get_sequence(proteins_residues[s])
 		for name, seq in proteins_db_sequences.items():
 			if s_seq == seq:
 				proteins_names[s] = name
-				proteins_multiplicity[s] = proteins_db_multiplicity[name]
+				proteins_multiplicity[s] = int(proteins_db_multiplicity[name])
+		if proteins_multiplicity[s] > 1:
+			pres_oligomers = True
 	
 	#display results
 	#================
@@ -1662,21 +1666,37 @@ def calculate_statistics():
 	return
 def process_oligomers():
 
-	#global proteins_ctcts_res
-	#proteins_ctcts_res_monomers = {}
-	#for s_index1 in range(0,nb_species):
-		#for s_index2 in range(s_index1, nb_species):
-			#proteins_ctcts_res[s_index1, s_index2] = np.zeros((proteins_length[proteins_species[s_index1]], proteins_length[proteins_species[s_index2]]))
-
-	#global proein
-
-	#proteins_ctcts_res[A, B] = np.zeros((proteins_length[A], proteins_length[B]/3))
-
-	#proteins_ctcts_res[A, B] = proteins_ctcts_res[A, B][:,:n1] + proteins_ctcts_res[A, B][:,n1:n2] + proteins_ctcts_res[A, B][:,n2:]
-
-	#proteins_ctcts_res[B, B] = proteins_ctcts_res[B,B][:n1,:n1] + proteins_ctcts_res[B,B][:n1,n1:n2] + proteins_ctcts_res[A,B][:n1,n2:] + proteins_ctcts_res[B,B][:n1,:n1] + proteins_ctcts_res[B,B][:n1,n1:n2] + proteins_ctcts_res[A,B][:n1,n2:]
-
-	#proteins_ctcts_res[s_index1, s_index2] = np.zeros((proteins_length[proteins_species[s_index1]], proteins_length[proteins_species[s_index2]]))
+	global proteins_ctcts_res
+	
+	#use local variable to calculate new interaction matrix
+	proteins_ctcts_res_new = {}
+	for s_index1 in range(0,nb_species):
+		s1 = proteins_species[s_index1]
+		if proteins_multiplicity[s1] > 1:
+			proteins_length[s1] = int(len(proteins_residues[s1])/float(proteins_multiplicity[s1]))
+			for s_index2 in range(s_index1, nb_species):
+				s2 = proteins_species[s_index2]
+				#case: s2 also is an oligomer
+				if proteins_multiplicity[s2] > 1:
+					proteins_length[s2] = int(len(proteins_residues[s1])/float(proteins_multiplicity[s1]))
+					proteins_ctcts_res_new[s_index1, s_index2] = np.zeros((proteins_length[s1], proteins_length[s2]))
+					for n1 in range(0, proteins_multiplicity[s1]):
+						for n2 in range(0, proteins_multiplicity[s2]):
+							proteins_ctcts_res_new[s_index1, s_index2] += proteins_ctcts_res[s_index1, s_index2][n1*proteins_length[s1]:(n1+1)*proteins_length[s1], n2*proteins_length[s2]:(n2+1)*proteins_length[s2]]
+				
+				#case: s2 isn't an oligomer
+				else:
+					proteins_ctcts_res_new[s_index1, s_index2] = np.zeros((proteins_length[s1], proteins_length[s2]))
+					for n1 in range(0, proteins_multiplicity[s1]):
+						proteins_ctcts_res_new[s_index1, s_index2] += proteins_ctcts_res[s_index1, s_index2][n1*proteins_length[s1]:(n1+1)*proteins_length[s1], :]
+		
+	#update global interaction matrix
+	#debug
+	print "before", proteins_ctcts_res
+	proteins_ctcts_res = proteins_ctcts_res_new
+		
+	#debug
+	print "after", proteins_ctcts_res
 
 	return
 
@@ -1784,6 +1804,9 @@ def graph_heatmap_2D_res():
 		for s_index2 in range(s_index1, nb_species):
 			s2 = proteins_species[s_index2]
 
+			#debug
+			print proteins_ctcts_res
+			
 			#only plot if contact between the 2 species occured
 			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:
 			
@@ -2998,8 +3021,10 @@ calculate_statistics()
 #=========================================================================================
 print "\nWriting outputs..."
 
+if pres_oligomers:
+	process_oligomers()
 graph_heatmap_2D_prot()
-#graph_heatmap_2D_res()
+graph_heatmap_2D_res()
 
 #case: gro file
 #==============
