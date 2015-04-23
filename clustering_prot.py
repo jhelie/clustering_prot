@@ -1711,13 +1711,8 @@ def process_oligomers():
 			
 	
 	#update global interaction matrix
-	#debug
-	print "before", proteins_ctcts_res
 	proteins_ctcts_res = proteins_ctcts_res_new
 		
-	#debug
-	print "after", proteins_ctcts_res
-
 	return
 
 #=========================================================================================
@@ -1767,13 +1762,13 @@ def graph_heatmap_2D_prot():
 		s = proteins_species[s_index]
 		#homo interaction corner
 		if s_index == 0:
-			text = plt.text(proteins_nb[s]/float(2), proteins_nb[s]/float(2), str(s).upper() + "-" + str(s).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+			text = plt.text(proteins_nb[s]/float(2), proteins_nb[s]/float(2), str(proteins_names[s]) + "-" + str(proteins_names[s]), verticalalignment='center', horizontalalignment='center', fontsize=20)
 			text.set_alpha(0.1)
 		else:
 			tmp_offset_s = 0
 			for ss_index in range(0, s_index):
 				tmp_offset_s += proteins_nb[proteins_species[ss_index]]
-			text = plt.text(tmp_offset_s + proteins_nb[s]/float(2), tmp_offset_s + proteins_nb[s]/float(2), str(s).upper() + "-" + str(s).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+			text = plt.text(tmp_offset_s + proteins_nb[s]/float(2), tmp_offset_s + proteins_nb[s]/float(2), str(proteins_names[s]) + "-" + str(proteins_names[s]), verticalalignment='center', horizontalalignment='center', fontsize=20)
 			text.set_alpha(0.1)
 		#hetero interactions corner
 		for ss_index in range(s_index + 1, nb_species):
@@ -1784,15 +1779,15 @@ def graph_heatmap_2D_prot():
 				tmp_offset_ss += proteins_nb[proteins_species[sss_index]]
 			#horizontal
 			if s_index == 0:
-				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), proteins_nb[s]/float(2), str(ss).upper() + "-" + str(s).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), proteins_nb[s]/float(2), str(proteins_names[ss]) + "-" + str(proteins_names[s]), verticalalignment='center', horizontalalignment='center', fontsize=20)
 			else:
-				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), tmp_offset_s + proteins_nb[s]/float(2), str(ss).upper() + "-" + str(s).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+				text = plt.text(tmp_offset_ss + proteins_nb[ss]/float(2), tmp_offset_s + proteins_nb[s]/float(2), str(proteins_names[ss]) + "-" + str(proteins_names[s]), verticalalignment='center', horizontalalignment='center', fontsize=20)
 			text.set_alpha(0.1)
 			#vertical
 			if s_index == 0:
-				text = plt.text(proteins_nb[s]/float(2), tmp_offset_ss + proteins_nb[ss]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+				text = plt.text(proteins_nb[s]/float(2), tmp_offset_ss + proteins_nb[ss]/float(2), str(proteins_names[s]) + "-" + str(proteins_names[ss]), verticalalignment='center', horizontalalignment='center', fontsize=20)
 			else:
-				text = plt.text(tmp_offset_s + proteins_nb[s]/float(2), tmp_offset_ss + proteins_nb[ss]/float(2), str(s).upper() + "-" + str(ss).upper(), verticalalignment='center', horizontalalignment='center', fontsize=60)
+				text = plt.text(tmp_offset_s + proteins_nb[s]/float(2), tmp_offset_ss + proteins_nb[ss]/float(2), str(proteins_names[s]) + "-" + str(proteins_names[ss]), verticalalignment='center', horizontalalignment='center', fontsize=20)
 			text.set_alpha(0.1)
 	for s in proteins_species:
 		plt.vlines(proteins_nb[s], 0, nb_proteins, linestyles = 'dashed')
@@ -1823,9 +1818,6 @@ def graph_heatmap_2D_res():
 		s1 = proteins_species[s_index1]
 		for s_index2 in range(s_index1, nb_species):
 			s2 = proteins_species[s_index2]
-
-			#debug
-			print proteins_ctcts_res
 			
 			#only plot if contact between the 2 species occured
 			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:
@@ -1845,7 +1837,7 @@ def graph_heatmap_2D_res():
 				print s1, s2
 				print np.shape(proteins_ctcts_res[s_index1,s_index2])
 				
-				plt.pcolormesh(proteins_ctcts_res[s_index1,s_index2][proteins_ctcts_res[s_index1,s_index2] > 1], cmap = plt.cm.Greens)
+				plt.pcolormesh(proteins_ctcts_res[s_index1,s_index2], cmap = plt.cm.Greens)
 				#plt.axis([0, proteins_length[s2],0, proteins_length[s2]])
 				
 				plt.xlabel('residues ' + str(s2).upper(), fontsize="small")
