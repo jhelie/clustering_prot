@@ -1824,6 +1824,9 @@ def graph_heatmap_2D_res():
 			
 			#only plot if contact between the 2 species occured
 			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:
+				#normalise data
+				#--------------
+				proteins_ctcts_res[s_index1,s_index2] /= float(np.sum(proteins_ctcts_res[s_index1,s_index2]))
 			
 				#create filename
 				#---------------
@@ -1835,14 +1838,15 @@ def graph_heatmap_2D_res():
 				fig.suptitle("Contacts between species " + str(s1).upper() + "-" + str(s2).upper())
 					
 				#plot data
-				#---------
+				#---------				
+				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2] > args.res_show
+				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2][np.any(tmp_s1s2_plot, axis = 1)][:,np.any(tmp_s1s2_plot, axis = 0)]
+				plt.pcolormesh(tmp_s1s2_plot, cmap = plt.cm.Greens)
+				
 				#debug
-				print s1, s2
-				print np.shape(proteins_ctcts_res[s_index1,s_index2])
+				print tmp_s1s2_plot
 				
-				plt.pcolormesh(proteins_ctcts_res[s_index1,s_index2], cmap = plt.cm.Greens)
-				#plt.axis([0, proteins_length[s2],0, proteins_length[s2]])
-				
+				plt.axis([0, np.shape(tmp_s1s2_plot)[1], 0, np.shape(tmp_s1s2_plot)[0]])
 				plt.xlabel('residues ' + str(s2).upper(), fontsize="small")
 				plt.ylabel('residues ' + str(s1).upper(), fontsize="small")
 				plt.colorbar()
