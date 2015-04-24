@@ -1210,11 +1210,13 @@ def struct_clusters():
 	global clusters_nb
 	global clusters_pc
 	global clusters_comp
+	global clusters_comp_avg
 	global clusters_biggest
 	global clusters_mostrep
 	
 	# This stores the composition of each cluster of each size
 	clusters_comp = {}
+	clusters_comp_avg = {}
 
 	# These store, for each frame, the nb clusters of each size identified and the % of all proteins they account for
 	clusters_nb = {}
@@ -1517,11 +1519,11 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 			
 			#store cluster composition
 			tmp_comp = tuple(tmp_comp)
-			if (c_size - 1) not in clusters_comp.keys():
-				clusters_comp[c_size-1] = {}
-			if tmp_comp not in clusters_comp[c_size-1].keys():
-				clusters_comp[c_size-1][tmp_comp] = 0
-			clusters_comp[c_size-1][tmp_comp] += 1
+			if c_size not in clusters_comp.keys():
+				clusters_comp[c_size] = {}
+			if tmp_comp not in clusters_comp[c_size].keys():
+				clusters_comp[c_size][tmp_comp] = 0
+			clusters_comp[c_size][tmp_comp] += 1
 	
 	#create annotation line for current frame
 	#========================================
@@ -1670,7 +1672,25 @@ def calculate_statistics():
 		if tmp_sum > 0:
 			proteins_ctcts_prot[:,p_index] /= float(tmp_sum)
 	
+	#contacts between residues
+	#-------------------------
+	#for each pair of proteins normalise the number of contacts between pair of residues by the total number of contacts over all residues
+	for s_index1 in range(0,nb_species):
+		for s_index2 in range(s_index1, nb_species):
+			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:
+				proteins_ctcts_res[s_index1,s_index2] /= float(np.sum(proteins_ctcts_res[s_index1,s_index2]))
+
+	#composition of clusters
+	#-----------------------
+	for c_size in cluster_sizes_sampled:
+		c_comp_overall = np.zeros(nb_species)
+		for comp, nb in clusters_comp[c_size].items():
+			for s_index in range(0, nb_species):
+				c_comp_overall[s_index] += comp[s_index] * nb
+		clusters_comp_avg[c_size] = c_comp_overall / float(np.sum(c_comp_overall)) * 100
+		
 	return
+
 def process_oligomers():
 
 	global proteins_ctcts_res
@@ -1827,13 +1847,7 @@ def graph_heatmap_2D_res():
 		s1 = proteins_species[s_index1]
 		for s_index2 in range(s_index1, nb_species):
 			s2 = proteins_species[s_index2]
-			
-			#only plot if contact between the 2 species occured
-			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:
-				#normalise data
-				#--------------
-				proteins_ctcts_res[s_index1,s_index2] /= float(np.sum(proteins_ctcts_res[s_index1,s_index2]))
-			
+			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:			
 				#create filename
 				#---------------
 				filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2D_heatmap_residues_' + str(s1).upper() + '-' + str(s2).upper() + '.svg'
@@ -1882,6 +1896,32 @@ def graph_heatmap_2D_res():
 				#-----------
 				fig.savefig(filename_svg)
 				plt.close()	
+	return
+
+#clusters average composition
+def graph_clusters_comp():
+
+	#create filename
+	#---------------
+	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/clusters_composition.svg'
+
+	#create figure
+	#-------------
+	fig, ax = plt.subplots()
+	fig.suptitle("Average clusters composition")
+	
+	#plot data
+	#---------				
+	xticks_pos=np.arange(1, 1 + len(cluster_sizes_sampled))
+	ax.set_xlim(0.5, 0.5 + len(cluster_sizes_sampled))
+	for c_index in range(0, len(cluster_sizes_sampled)):
+		c_size = cluster_sizes_sampled[c_index]
+		plt.bar(xticks_pos - 0.250, clusters_comp_avg[c_size][0], width=0.25, color='r', label = "A")
+		plt.bar(xticks_pos, clusters_comp_avg[c_size][1], width=0.25, color='c', label = "B")
+	
+	fig.savefig(filename_svg)
+	plt.close()
+	
 	return
 
 #sizes
@@ -3062,6 +3102,7 @@ if pres_oligomers:
 	process_oligomers()
 graph_heatmap_2D_prot()
 graph_heatmap_2D_res()
+graph_clusters_comp()
 
 #case: gro file
 #==============
