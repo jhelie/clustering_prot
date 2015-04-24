@@ -1499,6 +1499,10 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 							dist_p_pp_matrix = MDAnalysis.analysis.distances.distance_array(np.asarray(pp_res_cog), np.asarray(p_res_cog), box_dim)
 						proteins_ctcts_res[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][dist_p_pp_matrix < args.res_contact] += 1
 						
+						#case: homo interactions (we essentially get twice the sampling for the same price)
+						if p_s_index == pp_s_index:
+							proteins_ctcts_res[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][(dist_p_pp_matrix < args.res_contact).T] += 1
+						
 						#store total contacts with neighbour
 						proteins_ctcts_prot[p_index, pp_index] += np.sum(dist_p_pp_matrix < args.res_contact)
 						
@@ -1798,7 +1802,9 @@ def graph_heatmap_2D_prot():
 	
 	plt.xlabel('protein index', fontsize="small")
 	plt.ylabel('index of proteins interacted with', fontsize="small")
-	plt.colorbar()
+	cbar = plt.colorbar()
+	cbar.set_label('Relative number of contacts', size = 10)
+	cbar.ax.tick_params(labelsize = 8)
 
 	#save figure
 	#-----------
@@ -1860,8 +1866,8 @@ def graph_heatmap_2D_res():
 				ax.yaxis.set_ticks_position('left')
 				ax.set_xticklabels(s1_labels)
 				ax.set_yticklabels(s2_labels)
-				plt.setp(ax.xaxis.get_majorticklabels(), fontsize="small" )
-				plt.setp(ax.yaxis.get_majorticklabels(), fontsize="small" )
+				plt.setp(ax.xaxis.get_majorticklabels(), fontsize="xx-small" )
+				plt.setp(ax.yaxis.get_majorticklabels(), fontsize="xx-small" )
 				fig.savefig(filename_svg)
 				plt.close()	
 	return
