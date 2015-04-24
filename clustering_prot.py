@@ -1849,13 +1849,14 @@ def graph_heatmap_2D_res():
 				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2][np.any(tmp_s1s2_plot, axis = 1)][:,np.any(tmp_s1s2_plot, axis = 0)]
 				plt.pcolormesh(tmp_s1s2_plot.T, cmap = plt.cm.Greens)
 								
+				#label axes
+				#----------
 				plt.axis([0, np.shape(tmp_s1s2_plot)[0], 0, np.shape(tmp_s1s2_plot)[1]])
 				plt.xlabel(str(proteins_names[s1]) + ' residues', fontsize="small")
 				plt.ylabel(str(proteins_names[s2]) + ' residues', fontsize="small")
-				plt.colorbar()
-			
-				#save figure
-				#-----------
+				
+				#label axes ticks
+				#----------------
 				s1_labels = [proteins_residues[s1][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 1)) if res]
 				s2_labels = [proteins_residues[s2][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 0)) if res]
 				plt.xticks(np.arange(0.5, len(s1_labels) + 0.5), rotation = 90)
@@ -1868,6 +1869,17 @@ def graph_heatmap_2D_res():
 				ax.set_yticklabels(s2_labels)
 				plt.setp(ax.xaxis.get_majorticklabels(), fontsize="xx-small" )
 				plt.setp(ax.yaxis.get_majorticklabels(), fontsize="xx-small" )
+				
+				#colour bar
+				#----------
+				cbar = plt.colorbar()
+				cbar.set_label('Relative number of contacts', size = 10)
+				cbar.formatter.set_powerlimits((0, 0))
+				cbar.update_ticks()
+				cbar.ax.tick_params(labelsize = 8)
+			
+				#save figure
+				#-----------
 				fig.savefig(filename_svg)
 				plt.close()	
 	return
