@@ -1835,8 +1835,10 @@ def graph_heatmap_2D_res():
 				#create figure
 				#-------------
 				fig, ax = plt.subplots()
-				fig.suptitle("Most significant residues interactions between " + str(proteins_names[s1]) + " and " + str(proteins_names[s2]))
+				fig.suptitle("Most significant interactions between " + str(proteins_names[s1]) + " and " + str(proteins_names[s2]))
 					
+
+				
 				#plot data
 				#---------				
 				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2] > args.res_show
@@ -1854,8 +1856,38 @@ def graph_heatmap_2D_res():
 				ax.spines['right'].set_visible(False)
 				ax.xaxis.set_ticks_position('bottom')
 				ax.yaxis.set_ticks_position('left')
-				#ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
-				#ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+				ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
+				ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+				x_labels = ax.get_xticks().tolist()
+				
+				#step1: get total sequence corresponding to residues plotted
+				s1_plot = [proteins_residues[s1][i] for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 1)) if res]
+				s2_plot = [proteins_residues[s2][i] for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 0)) if res]
+				
+				#step2: get position of the ticks
+				s1_labels = ax.get_xticks().tolist()[:-1]
+				s2_labels = ax.get_yticks().tolist()[:-1]
+				
+				#debug
+				print "before", s1_plot, s1_labels
+				print ""
+				
+				#step3: replace tick labels using value of sequence at these positions
+				for s1_l_index in range(0, len(s1_labels)):
+					s1_l = int(s1_labels[s1_l_index])
+					s1_labels[s1_l_index] = s1_plot[int(s1_l)]
+				ax.set_xticklabels(s1_labels)
+				
+				for s2_l_index in range(0, len(s2_labels)):
+					s2_l = int(s2_labels[s2_l_index])
+					s2_labels[s2_l_index] = s2_plot[int(s2_l)]
+				ax.set_yticklabels(s2_labels)
+
+				#debug
+				print "after", s1_plot, s1_labels
+				print ""
+
+				
 				plt.setp(ax.xaxis.get_majorticklabels(), fontsize="small" )
 				plt.setp(ax.yaxis.get_majorticklabels(), fontsize="small" )
 				#plt.subplots_adjust(top=0.9, bottom=0.07, hspace=0.37, left=0.09, right=0.96)
