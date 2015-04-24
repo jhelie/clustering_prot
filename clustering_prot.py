@@ -1835,20 +1835,17 @@ def graph_heatmap_2D_res():
 				#create figure
 				#-------------
 				fig, ax = plt.subplots()
-				fig.suptitle("Contacts between species " + str(s1).upper() + "-" + str(s2).upper())
+				fig.suptitle("Most significant residues interactions between " + str(proteins_names[s1]) + " and " + str(proteins_names[s2]))
 					
 				#plot data
 				#---------				
 				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2] > args.res_show
 				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2][np.any(tmp_s1s2_plot, axis = 1)][:,np.any(tmp_s1s2_plot, axis = 0)]
-				plt.pcolormesh(tmp_s1s2_plot, cmap = plt.cm.Greens)
-				
-				#debug
-				print tmp_s1s2_plot
-				
-				plt.axis([0, np.shape(tmp_s1s2_plot)[1], 0, np.shape(tmp_s1s2_plot)[0]])
-				plt.xlabel('residues ' + str(s2).upper(), fontsize="small")
-				plt.ylabel('residues ' + str(s1).upper(), fontsize="small")
+				plt.pcolormesh(tmp_s1s2_plot.T, cmap = plt.cm.Greens)
+								
+				plt.axis([0, np.shape(tmp_s1s2_plot)[0], 0, np.shape(tmp_s1s2_plot)[1]])
+				plt.xlabel(str(proteins_names[s1]) + ' residues', fontsize="small")
+				plt.ylabel(str(proteins_names[s2]) + ' residues', fontsize="small")
 				plt.colorbar()
 			
 				#save figure
