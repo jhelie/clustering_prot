@@ -1207,8 +1207,6 @@ def struct_clusters():
 	# 1. relative distribution of protein population at each frame
 	# 2. for groups groups_number = "other", -1 = lower, groups_number + 1 = upper
 	
-	global clusters_nb
-	global clusters_pc
 	global clusters_comp
 	global clusters_biggest
 	global clusters_mostrep
@@ -1217,8 +1215,6 @@ def struct_clusters():
 	clusters_comp = {}
 
 	# These store, for each frame, the nb clusters of each size identified and the % of all proteins they account for
-	clusters_nb = {}
-	clusters_pc = {}
 	if args.cluster_groups_file != "no":
 		global cluster_nb_group
 		global cluster_pc_group
@@ -1278,7 +1274,7 @@ def get_distances(box_dim):
 		#pre-process: get protein coordinates
 		tmp_proteins_coords = np.zeros((proteins_nb, nb_atom_per_protein, 3))
 		for p_index in range(0, proteins_nb):
-			tmp_proteins_coords[p_index,:] = fit_coords_into_box((proteins_sele[p_index].coordinates(), box_dim)
+			tmp_proteins_coords[p_index,:] = fit_coords_into_box(proteins_sele[p_index].coordinates(), box_dim)
 
 		#store min distance between each proteins
 		dist_matrix = 100000 * np.ones((proteins_nb,proteins_nb))
@@ -1295,8 +1291,8 @@ def get_distances(box_dim):
 	return dist_matrix
 def fit_coords_into_box(coords, box_dim):
 	
-	coords[:,0] -= np.floor(coords[:,0]/float(box_size[0])) * box_dim[0]
-	coords[:,1] -= np.floor(coords[:,1]/float(box_size[1])) * box_dim[1]
+	coords[:,0] -= np.floor(coords[:,0]/float(box_dim[0])) * box_dim[0]
+	coords[:,1] -= np.floor(coords[:,1]/float(box_dim[1])) * box_dim[1]
 	
 	return coords
 def calculate_cog(tmp_coords, box_dim):
@@ -1562,18 +1558,18 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 
 def get_sizes_sampled():
 		
+	global clusters_nb
+	global clusters_pc
 	global cluster_sizes_sampled
-	global cluster_TM_sizes_sampled
-	global cluster_sizes_nb
-	global cluster_sizes_pc
+	global cluster_sizes_sampled_TM
 	cluster_sizes_sampled = np.unique(proteins_size)
-	cluster_TM_sizes_sampled = cluster_sizes_sampled[cluster_sizes_sampled != -1]
-	cluster_TM_sizes_sampled = cluster_TM_sizes_sampled[cluster_TM_sizes_sampled != 99999]
-	cluster_sizes_sampled = sorted(cluster_sizes_sampled)
-	cluster_TM_sizes_sampled = sorted(cluster_TM_sizes_sampled)
+	cluster_sizes_sampled = sorted(cluster_sizes_sampled)	
+	cluster_sizes_sampled_TM = cluster_sizes_sampled[cluster_sizes_sampled != -1]
+	cluster_sizes_sampled_TM = cluster_sizes_sampled_TM[cluster_sizes_sampled_TM != 99999]
+	cluster_sizes_sampled_TM = sorted(cluster_sizes_sampled_TM)
 	
-	cluster_sizes_nb = {c_size: np.zeros(nb_frames_to_process) for c_size in cluster_sizes_sampled + [-1,99999]}
-	cluster_sizes_pc = {c_size: np.zeros(nb_frames_to_process) for c_size in cluster_sizes_sampled + [-1,99999]}
+	clusters_nb = {c_size: np.zeros(nb_frames_to_process) for c_size in cluster_sizes_sampled + [-1,99999]}
+	clusters_pc = {c_size: np.zeros(nb_frames_to_process) for c_size in cluster_sizes_sampled + [-1,99999]}
 
 	if args.cluster_groups_file != "no":
 		global cluster_TM_groups_sampled
@@ -1642,8 +1638,8 @@ def calculate_statistics():
 			tmp_pc = tmp_nb / float(nb_proteins) * 100
 			if c_size != -1 and c_size != 99999:					#take into account the cluster size except for interfacial peptides
 				tmp_nb = int(tmp_nb / float(c_size))				
-			cluster_sizes_nb[c_size][f_index] = tmp_nb
-			cluster_sizes_pc[c_size][f_index] = tmp_pc
+			clusters_nb[c_size][f_index] = tmp_nb
+			clusters_pc[c_size][f_index] = tmp_pc
 			if tmp_nb > 0 and c_size > tmp_max_size and c_size != -1 and c_size != 99999:
 				tmp_max_nb = tmp_nb
 				tmp_max_pc = tmp_pc
@@ -1686,6 +1682,7 @@ def calculate_statistics():
 
 	#composition of clusters
 	#-----------------------
+	#by size
 	global clusters_comp_avg
 	clusters_comp_avg = np.zeros((len(cluster_sizes_sampled), nb_species))
 	for c_index in range(0, len(cluster_sizes_sampled)):
@@ -1694,6 +1691,29 @@ def calculate_statistics():
 			for s_index in range(0, nb_species):
 				clusters_comp_avg[c_index, s_index] += comp[s_index] * nb
 		clusters_comp_avg[c_index,:] = clusters_comp_avg[c_index,:]/float(np.sum(clusters_comp_avg[c_index,:])) * 100
+
+	#by group
+	if args.cluster_groups_file != "no":
+		#create data structure
+		global clusters_comp_avg
+		if groups_number in cluster_TM_groups_sampled:
+			tmp_weight = np.zeros(groups_number + 1)
+			clusters_comp_avg_group = np.zeros((groups_number + 1, nb_species))
+		else:
+			tmp_weight = np.zeros(groups_number)
+			clusters_comp_avg_group = np.zeros((groups_number, nb_species))
+		
+		#browse size and calculate group data
+		for c_index in range(0, len(cluster_sizes_sampled)):
+			c_size = cluster_sizes_sampled[c_index]
+			g_index = groups_sizes_dict[c_size]
+			clusters_comp_avg_group[g_index, :] += clusters_comp_avg[c_index,:] * np.sum(clusters_nb[c_size])
+			tmp_weight[g_index] += np.sum(clusters_nb[c_size])
+	
+		#normalise by total number of clusters added to group
+		for g_index in cluster_TM_groups_sampled:
+			if tmp_weight[g_index] > 0:
+				clusters_comp_avg_group[g_index, :] /= float(tmp_weight)
 		
 	return
 
@@ -2156,13 +2176,13 @@ def write_xvg_sizes_TM():
 	for f_index in range(0,nb_frames_to_process):
 		results = str(frames_time[f_index])
 		for c_size in range(1, nb_proteins + 1):
-			if c_size in cluster_TM_sizes_sampled:
-				results += "	" + str(round(cluster_sizes_pc[c_size][f_index],2))
+			if c_size in cluster_sizes_sampled_TM:
+				results += "	" + str(round(clusters_pc[c_size][f_index],2))
 			else: 
 				results += "	0"		
 		for c_size in range(1, nb_proteins + 1):
-			if c_size in cluster_TM_sizes_sampled:
-				results += "	" + str(round(cluster_sizes_nb[c_size][f_index],2))
+			if c_size in cluster_sizes_sampled_TM:
+				results += "	" + str(round(clusters_nb[c_size][f_index],2))
 			else: 
 				results += "	0"		
 		output_xvg.write(results + "\n")
@@ -2187,7 +2207,7 @@ def graph_xvg_sizes_TM():
 	p_upper = {}
 	for c_size in cluster_sizes_sampled:
 		if c_size != -1 and c_size != 99999:
-			p_upper[c_size] = plt.plot(frames_time, cluster_sizes_pc[c_size], color = colours_sizes_dict[c_size], linewidth = 2.0, label = str(int(c_size)))
+			p_upper[c_size] = plt.plot(frames_time, clusters_pc[c_size], color = colours_sizes_dict[c_size], linewidth = 2.0, label = str(int(c_size)))
 	fontP.set_size("small")
 	ax1.legend(prop=fontP)
 	plt.title("%", fontsize="small")
@@ -2200,7 +2220,7 @@ def graph_xvg_sizes_TM():
 	p_lower = {}
 	for c_size in cluster_sizes_sampled:
 		if c_size != -1 and c_size != 99999:
-			p_lower[c_size] = plt.plot(frames_time, cluster_sizes_nb[c_size], color = colours_sizes_dict[c_size], linewidth = 2.0, label=str(int(c_size)))
+			p_lower[c_size] = plt.plot(frames_time, clusters_nb[c_size], color = colours_sizes_dict[c_size], linewidth = 2.0, label=str(int(c_size)))
 	fontP.set_size("small")
 	ax2.legend(prop=fontP)
 	plt.title("nb", fontsize="small")
@@ -2212,7 +2232,7 @@ def graph_xvg_sizes_TM():
 	ax1.set_xlim(frames_time[0],frames_time[nb_frames_to_process-1]) 
 	ax1.set_ylim(0, 100)
 	ax2.set_xlim(frames_time[0],frames_time[nb_frames_to_process-1]) 
-	ax2.set_ylim(0, np.max(cluster_sizes_nb.values())+1)
+	ax2.set_ylim(0, np.max(clusters_nb.values())+1)
 	ax1.spines['top'].set_visible(False)
 	ax1.spines['right'].set_visible(False)
 	ax2.spines['top'].set_visible(False)
@@ -2271,7 +2291,7 @@ def write_xvg_sizes_interfacial():
 	output_txt.write("1_2_clusterprot_1D_interfacial.xvg,4, upper (nb)," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[99999])) + "\n")
 	output_txt.close()
 	for f_index in range(0,nb_frames_to_process):
-		results = str(frames_time[f_index]) + "	" + str(round(cluster_sizes_pc[-1][f_index],2)) + "	" + str(round(cluster_sizes_pc[99999][f_index],2)) + "	" + str(round(cluster_sizes_nb[-1][f_index],2)) + "	" + str(round(cluster_sizes_nb[99999][f_index],2))
+		results = str(frames_time[f_index]) + "	" + str(round(clusters_pc[-1][f_index],2)) + "	" + str(round(clusters_pc[99999][f_index],2)) + "	" + str(round(clusters_nb[-1][f_index],2)) + "	" + str(round(clusters_nb[99999][f_index],2))
 		output_xvg.write(results + "\n")
 	output_xvg.close()
 	
@@ -2292,8 +2312,8 @@ def graph_xvg_sizes_interfacial():
 	#------------
 	ax1 = fig.add_subplot(211)
 	p_upper = {}
-	p_upper[99999] = plt.plot(frames_time, cluster_sizes_pc[99999], color = colours_sizes_dict[99999], linewidth = 2.0, label = "upper leaflet")
-	p_upper[-1] = plt.plot(frames_time, cluster_sizes_pc[-1], color = colours_sizes_dict[-1], linewidth = 2.0, label = "lower leaflet")
+	p_upper[99999] = plt.plot(frames_time, clusters_pc[99999], color = colours_sizes_dict[99999], linewidth = 2.0, label = "upper leaflet")
+	p_upper[-1] = plt.plot(frames_time, clusters_pc[-1], color = colours_sizes_dict[-1], linewidth = 2.0, label = "lower leaflet")
 	fontP.set_size("small")
 	ax1.legend(prop=fontP)
 	plt.title("%", fontsize="small")
@@ -2304,8 +2324,8 @@ def graph_xvg_sizes_interfacial():
 	#-------------
 	ax2 = fig.add_subplot(212)
 	p_lower = {}
-	p_lower[99999] = plt.plot(frames_time, cluster_sizes_nb[99999], color = colours_sizes_dict[99999], linewidth = 2.0, label = "upper leaflet")
-	p_lower[-1] = plt.plot(frames_time, cluster_sizes_nb[-1], color = colours_sizes_dict[-1], linewidth = 2.0, label = "lower leaflet")
+	p_lower[99999] = plt.plot(frames_time, clusters_nb[99999], color = colours_sizes_dict[99999], linewidth = 2.0, label = "upper leaflet")
+	p_lower[-1] = plt.plot(frames_time, clusters_nb[-1], color = colours_sizes_dict[-1], linewidth = 2.0, label = "lower leaflet")
 	fontP.set_size("small")
 	ax2.legend(prop=fontP)
 	plt.title("nb", fontsize="small")
@@ -2317,7 +2337,7 @@ def graph_xvg_sizes_interfacial():
 	ax1.set_xlim(frames_time[0],frames_time[nb_frames_to_process-1]) 
 	ax1.set_ylim(0, 100)
 	ax2.set_xlim(frames_time[0],frames_time[nb_frames_to_process-1]) 
-	ax2.set_ylim(0, np.max(cluster_sizes_nb.values())+1)
+	ax2.set_ylim(0, np.max(clusters_nb.values())+1)
 	ax1.spines['top'].set_visible(False)
 	ax1.spines['right'].set_visible(False)
 	ax2.spines['top'].set_visible(False)
@@ -2806,7 +2826,7 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 		output_stat.write(tmp_cap1 + "\n")
 		output_stat.write(tmp_cap2 + "\n")
 		for c_size in cluster_sizes_sampled:		
-			tmp_res += "	" + str(round(cluster_sizes_pc[c_size][f_index], 1))
+			tmp_res += "	" + str(round(clusters_pc[c_size][f_index], 1))
 		output_stat.write(tmp_res + "\n")		
 		output_stat.close()
 		
