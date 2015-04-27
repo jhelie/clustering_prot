@@ -1210,13 +1210,11 @@ def struct_clusters():
 	global clusters_nb
 	global clusters_pc
 	global clusters_comp
-	global clusters_comp_avg
 	global clusters_biggest
 	global clusters_mostrep
 	
 	# This stores the composition of each cluster of each size
 	clusters_comp = {}
-	clusters_comp_avg = {}
 
 	# These store, for each frame, the nb clusters of each size identified and the % of all proteins they account for
 	clusters_nb = {}
@@ -1280,7 +1278,7 @@ def get_distances(box_dim):
 		#pre-process: get protein coordinates
 		tmp_proteins_coords = np.zeros((proteins_nb, nb_atom_per_protein, 3))
 		for p_index in range(0, proteins_nb):
-			tmp_proteins_coords[p_index,:] = proteins_sele[p_index].coordinates()
+			tmp_proteins_coords[p_index,:] = fit_coords_into_box((proteins_sele[p_index].coordinates(), box_dim)
 
 		#store min distance between each proteins
 		dist_matrix = 100000 * np.ones((proteins_nb,proteins_nb))
@@ -1291,10 +1289,16 @@ def get_distances(box_dim):
 	#method: use distance between cog
 	#--------------------------------
 	else:
-		tmp_proteins_cogs = np.asarray(map(lambda p_index: calculate_cog(proteins_sele[prot_index2specie[p_index]][prot_index2rel[p_index]].coordinates(), box_dim), range(0,nb_proteins)))
+		tmp_proteins_cogs = np.asarray(map(lambda p_index: calculate_cog(fit_coords_into_box(proteins_sele[prot_index2specie[p_index]][prot_index2rel[p_index]].coordinates(), box_dim), box_dim), range(0,nb_proteins)))
 		dist_matrix = MDAnalysis.analysis.distances.distance_array(np.float32(tmp_proteins_cogs), np.float32(tmp_proteins_cogs), box_dim)
 
 	return dist_matrix
+def fit_coords_into_box(coords, box_dim):
+	
+	coords[:,0] -= np.floor(coords[:,0]/float(box_size[0])) * box_dim[0]
+	coords[:,1] -= np.floor(coords[:,1]/float(box_size[1])) * box_dim[1]
+	
+	return coords
 def calculate_cog(tmp_coords, box_dim):
 	
 	#this method allows to take pbc into account when calculcating the center of geometry 
@@ -1403,7 +1407,7 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 	clusters = nx.connected_components(network)
 	nb_clusters = len(clusters)
 	c_counter = 0
-	tmp_lip_coords = {l: leaflet_sele[l].coordinates() for l in ["lower","upper"]}
+	tmp_lip_coords = {l: fit_coords_into_box(leaflet_sele[l].coordinates(), box_dim) for l in ["lower","upper"]}
 	
 	#browse clusters found
 	#=====================
@@ -1426,10 +1430,10 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 		#create selection for current cluster
 		c_sele = MDAnalysis.core.AtomGroup.AtomGroup([])	
 		p_coords = {}
-		p_coords[cluster[0]] = proteins_sele[prot_index2specie[cluster[0]]][prot_index2rel[cluster[0]]].coordinates()
+		p_coords[cluster[0]] = fit_coords_into_box(proteins_sele[prot_index2specie[cluster[0]]][prot_index2rel[cluster[0]]].coordinates(), box_dim)
 		tmp_c_sele_coordinates = p_coords[cluster[0]]
 		for p_index in cluster[1:]:
-			p_coords[p_index] = proteins_sele[prot_index2specie[p_index]][prot_index2rel[p_index]].coordinates()
+			p_coords[p_index] = fit_coords_into_box(proteins_sele[prot_index2specie[p_index]][prot_index2rel[p_index]].coordinates(), box_dim)
 			tmp_c_sele_coordinates = np.concatenate((tmp_c_sele_coordinates,p_coords[p_index]))
 		#find closest PO4 particles for each particles of clusters, if all are in the same leaflet then it's surfacic [NB: this is done at the CLUSTER level (the same criteria at the protein level would probably fail)]
 		dist_min_lower = np.min(MDAnalysis.analysis.distances.distance_array(tmp_c_sele_coordinates, tmp_lip_coords["lower"], box_dim), axis = 1)
@@ -1682,12 +1686,14 @@ def calculate_statistics():
 
 	#composition of clusters
 	#-----------------------
-	for c_size in cluster_sizes_sampled:
-		c_comp_overall = np.zeros(nb_species)
+	global clusters_comp_avg
+	clusters_comp_avg = np.zeros((len(cluster_sizes_sampled), nb_species))
+	for c_index in range(0, len(cluster_sizes_sampled)):
+		c_size = cluster_sizes_sampled[c_index]
 		for comp, nb in clusters_comp[c_size].items():
 			for s_index in range(0, nb_species):
-				c_comp_overall[s_index] += comp[s_index] * nb
-		clusters_comp_avg[c_size] = c_comp_overall / float(np.sum(c_comp_overall)) * 100
+				clusters_comp_avg[c_index, s_index] += comp[s_index] * nb
+		clusters_comp_avg[c_index,:] = clusters_comp_avg[c_index,:]/float(np.sum(clusters_comp_avg[c_index,:])) * 100
 		
 	return
 
@@ -1876,7 +1882,7 @@ def graph_heatmap_2D_res():
 				plt.xticks(np.arange(0.5, len(s1_labels) + 0.5), rotation = 90)
 				plt.yticks(np.arange(0.5, len(s2_labels) + 0.5))
 				ax.spines['top'].set_visible(False)
-				ax.spines['right'].set_visible(False)				
+				ax.spines['right'].set_visible(False)
 				ax.xaxis.set_ticks_position('bottom')
 				ax.yaxis.set_ticks_position('left')
 				ax.set_xticklabels(s1_labels)
@@ -1912,12 +1918,24 @@ def graph_clusters_comp():
 	
 	#plot data
 	#---------				
-	xticks_pos=np.arange(1, 1 + len(cluster_sizes_sampled))
+	xticks_pos = np.arange(1, 1 + len(cluster_sizes_sampled))
 	ax.set_xlim(0.5, 0.5 + len(cluster_sizes_sampled))
-	for c_index in range(0, len(cluster_sizes_sampled)):
-		c_size = cluster_sizes_sampled[c_index]
-		plt.bar(xticks_pos - 0.250, clusters_comp_avg[c_size][0], width=0.25, color='r', label = "A")
-		plt.bar(xticks_pos, clusters_comp_avg[c_size][1], width=0.25, color='c', label = "B")
+	
+	#for s_index in range(0, nb_species):
+	#	c_size = cluster_sizes_sampled[c_index]
+	plt.bar(xticks_pos - 0.250, clusters_comp_avg[:, 0], width=0.25, color='y', label = "A")
+	plt.bar(xticks_pos, clusters_comp_avg[:, 1], width=0.25, color='c', label = "B")
+	
+	ax.spines['top'].set_visible(False)
+	ax.spines['right'].set_visible(False)
+	ax.xaxis.set_ticks_position('bottom')
+	ax.yaxis.set_ticks_position('left')
+
+
+	ax.xaxis.set_major_locator(MaxNLocator(nbins=len(cluster_sizes_sampled) + 1))
+	ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+	
+	ax.set_xticklabels([0] + cluster_sizes_sampled)
 	
 	fig.savefig(filename_svg)
 	plt.close()
