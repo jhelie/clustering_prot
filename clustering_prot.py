@@ -321,10 +321,10 @@ colour_leaflet_upper = "#C0C0C0"										#light grey
 #colour of cluster sizes
 tmp_col_size = args.colours_sizes.split(',')
 if len(tmp_col_size) != 2:
-	print "Error: wrong format for the option --colours_sizes, it should be 'min,max' (see bilayer_perturbations --help, note 8)."
+	print "Error: wrong format for the option --colours_sizes, it should be 'min,max' (see clustering_prot --help, note 8)."
 	sys.exit(1)
 elif int(tmp_col_size[0]) > int(tmp_col_size[1]):
-	print "Error: wrong format for the option --colours_sizes, it should be 'min,max' (see bilayer_perturbations --help, note 8)."
+	print "Error: wrong format for the option --colours_sizes, it should be 'min,max' (see clustering_prot --help, note 8)."
 	sys.exit(1)
 else:
 	colours_sizes_range = [int(tmp_col_size[0]), int(tmp_col_size[1])]
@@ -527,6 +527,7 @@ else:
 #=========================================================================================
 
 def set_proteins_database():
+	global proteins_db_colours
 	global proteins_db_sequences
 	global proteins_db_multiplicity
 	global res_code_3to1
@@ -553,6 +554,10 @@ def set_proteins_database():
 	res_code_3to1['TYR'] = 'Y'
 	res_code_3to1['VAL'] = 'V'
 	
+	proteins_db_colours = {}
+	proteins_db_colours["OmpF"] = 'c'
+	proteins_db_colours["BtuB"] = 'y'
+
 	proteins_db_sequences = {}
 	proteins_db_sequences["OmpF"] = 'AEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQFAEIYNKDGNKVDLYGKAVGLHYFSKGNGENSYGGNGDMTYARLGFKGETQINSDLTGYGQWEYNFQGNNSEGADAQTGNKTRLAFAGLKYADVGSFDYGRNYGVVYDALGYTDMLPEFGGDTAYSDDFFVGRVGGVATYRNSNFFGLVDGLNFAVQYLGKNERDTARRSNGDGVGGSISYEYEGFGIVGAYGAADRTNLQEAQPLGNGKKAEQWATGLKYDANNIYLAANYGETRNATPITNKFTNTSGFANKTQDVLLVAQYQFDFGLRPSIAYTKSKAKDVEGIGDVDLVNYFEVGATYYFNKNMSTYVDYIINQIDSDNKLGVGSDDTVAVGIVYQF'
 	proteins_db_sequences["BtuB"] = 'QDTSPDTLVVTANRFEQPRSTVLAPTTVVTRQDIDRWQSTSVNDVLRRLPGVDITQNGGSGQLSSIFIRGTNASHVLVLIDGVRLNLAGVSGSADLSQFPIALVQRVEYIRGPRSAVYGSDAIGGVVNIITTRDEPGTEISAGWGSNSYQNYDVSTQQQLGDKTRVTLLGDYAHTHGYDVVAYGNTGTQAQTDNDGFLSKTLYGALEHNFTDAWSGFVRGYGYDNRTNYDAYYSPGSPLLDTRKLYSQSWDAGLRYNGELIKSQLITSYSHSKDYNYDPHYGRYDSSATLDEMKQYTVQWANNVIVGHGSIGAGVDWQKQTTTPGTGYVEDGYDQRNTGIYLTGLQQVGDFTFEGAARSDDNSQFGRHGTWQTSAGWEFIEGYRFIASYGTSYKAPNLGQLYGFYGNPNLDPEKSKQWEGAFEGLTAGVNWRISGYRNDVSDLIDYDDHTLKYYNEGKARIKGVEATANFDTGPLTHTVSYDYVDARNAITDTPLLRRAKQQVKYQLDWQLYDFDWGITYQYLGTRYDKDYSSYPYQTVKMGGVSLWDLAVAYPVTSHLTVRGKIANLFDKDYETVYGYQTAGREYTLSGSYTF'
@@ -560,7 +565,7 @@ def set_proteins_database():
 	proteins_db_multiplicity = {}
 	proteins_db_multiplicity["OmpF"] = 3
 	proteins_db_multiplicity["BtuB"] = 1
-	
+		
 	if args.species_file != "no":
 		print "\nReading species definition file..."
 		with open(args.species_file) as f:
@@ -598,6 +603,7 @@ def set_proteins_database():
 				print "->", line
 				sys.exit(1)
 			else:
+				proteins_db_colours[tmp_name] = np.random.rand(3,)	#at this stage assign random colours to protein, change it so that can be user specified
 				proteins_db_sequences[tmp_name] = tmp_seq*tmp_mult
 				proteins_db_multiplicity[tmp_name] = tmp_mult
 		print ""
@@ -741,7 +747,7 @@ def identify_ff():
 		try:
 			line_content = line.split(',')
 			if len(line_content) != 4:
-				print "Error: wrong format for line " + str(l_index+1) + " in " + str(args.selection_file_ff) + ", see note 4 in bilayer_perturbations --help."
+				print "Error: wrong format for line " + str(l_index+1) + " in " + str(args.selection_file_ff) + ", see note 4 in clustering_prot --help."
 				print " ->", line
 				sys.exit(1)
 			#read current lipid details
@@ -805,6 +811,7 @@ def identify_proteins():
 	global proteins_sele
 	global proteins_names
 	global proteins_length
+	global proteins_colours
 	global proteins_species
 	global proteins_residues
 	global proteins_multiplicity
@@ -815,6 +822,7 @@ def identify_proteins():
 	proteins_sele = {}
 	proteins_names = {}
 	proteins_length = {}
+	proteins_colours = {}
 	proteins_species = []
 	proteins_residues = {}
 	proteins_multiplicity = {}
@@ -921,11 +929,13 @@ def identify_proteins():
 	#====================================
 	for s in proteins_species:
 		proteins_names[s] = s
+		proteins_colours[s] = np.random.rand(3,)
 		proteins_multiplicity[s] = int(1)
 		s_seq = get_sequence(proteins_residues[s])
 		for name, seq in proteins_db_sequences.items():
 			if s_seq == seq:
 				proteins_names[s] = name
+				proteins_colours[s] = proteins_db_colours[name]
 				proteins_multiplicity[s] = int(proteins_db_multiplicity[name])
 		if proteins_multiplicity[s] > 1:
 			pres_oligomers = True
@@ -1106,7 +1116,7 @@ def initialise_groups():
 		l_content = line.split(',')
 		#check format
 		if len(l_content) != 3:
-			print "Error: the format of line " + str(g_index+1) + " should be 'min,max,colour' (see bilayer_perturbations --help, note 7)."
+			print "Error: the format of line " + str(g_index+1) + " should be 'min,max,colour' (see clustering_prot --help, note 7)."
 			print "->", line
 			sys.exit(1)
 		tmp_beg = int(l_content[0])
@@ -1139,7 +1149,7 @@ def initialise_groups():
 			print "Error: the max size is smaller than the min size for group " + str(g_index) + "(" + str(groups_boundaries[g_index][0]) + "-" + str(groups_boundaries[g_index][1]) + ")."
 			sys.exit(1)
 		if groups_boundaries[g_index][0] <= prev_end:
-			print "Error: specified cluster groups " + str(prev_beg) + "-" + str(prev_end) + " and " + str(groups_boundaries[g_index][0]) + "-" + str(groups_boundaries[g_index][1]) + " overlap or are not in increasing order (boundaries are inclusive, see note 7 in bilayer_perturbations --help)."
+			print "Error: specified cluster groups " + str(prev_beg) + "-" + str(prev_end) + " and " + str(groups_boundaries[g_index][0]) + "-" + str(groups_boundaries[g_index][1]) + " overlap or are not in increasing order (boundaries are inclusive, see note 7 in clustering_prot --help)."
 			sys.exit(1)
 		prev_beg = groups_boundaries[g_index][0]
 		prev_end = groups_boundaries[g_index][1]
@@ -1214,7 +1224,7 @@ def struct_clusters():
 	# This stores the composition of each cluster of each size
 	clusters_comp = {}
 
-	# These store, for each frame, the nb clusters of each size identified and the % of all proteins they account for
+	# These store, for each frame, the nb clusters of each group identified and the % of all proteins they account for
 	if args.cluster_groups_file != "no":
 		global cluster_nb_group
 		global cluster_pc_group
@@ -1563,9 +1573,9 @@ def get_sizes_sampled():
 	global cluster_sizes_sampled
 	global cluster_sizes_sampled_TM
 	cluster_sizes_sampled = np.unique(proteins_size)
-	cluster_sizes_sampled = sorted(cluster_sizes_sampled)	
-	cluster_sizes_sampled_TM = cluster_sizes_sampled[cluster_sizes_sampled != -1]
+	cluster_sizes_sampled_TM = cluster_sizes_sampled[cluster_sizes_sampled != -1]	
 	cluster_sizes_sampled_TM = cluster_sizes_sampled_TM[cluster_sizes_sampled_TM != 99999]
+	cluster_sizes_sampled = sorted(cluster_sizes_sampled)	
 	cluster_sizes_sampled_TM = sorted(cluster_sizes_sampled_TM)
 	
 	clusters_nb = {c_size: np.zeros(nb_frames_to_process) for c_size in cluster_sizes_sampled + [-1,99999]}
@@ -1695,7 +1705,7 @@ def calculate_statistics():
 	#by group
 	if args.cluster_groups_file != "no":
 		#create data structure
-		global clusters_comp_avg
+		global clusters_comp_avg_group
 		if groups_number in cluster_TM_groups_sampled:
 			tmp_weight = np.zeros(groups_number + 1)
 			clusters_comp_avg_group = np.zeros((groups_number + 1, nb_species))
@@ -1707,6 +1717,8 @@ def calculate_statistics():
 		for c_index in range(0, len(cluster_sizes_sampled)):
 			c_size = cluster_sizes_sampled[c_index]
 			g_index = groups_sizes_dict[c_size]
+			#debug
+			print np.sum(clusters_nb[c_size]), nb.sum(clusters_comp[c_size].values())
 			clusters_comp_avg_group[g_index, :] += clusters_comp_avg[c_index,:] * np.sum(clusters_nb[c_size])
 			tmp_weight[g_index] += np.sum(clusters_nb[c_size])
 	
@@ -1927,6 +1939,8 @@ def graph_heatmap_2D_res():
 #clusters average composition
 def graph_clusters_comp():
 
+	#by size
+	#=======
 	#create filename
 	#---------------
 	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/clusters_composition.svg'
@@ -1938,27 +1952,32 @@ def graph_clusters_comp():
 	
 	#plot data
 	#---------				
+	bar_width = 0.5/float(nb_species)
 	xticks_pos = np.arange(1, 1 + len(cluster_sizes_sampled))
 	ax.set_xlim(0.5, 0.5 + len(cluster_sizes_sampled))
+	for s_index in range(0, nb_species):
+		s = proteins_species[s_index]
+		plt.bar(xticks_pos - 0.250 + s_index * bar_width, clusters_comp_avg[:, s_index], width=bar_width, color=proteins_colours[s], label=proteins_names[s])
 	
-	#for s_index in range(0, nb_species):
-	#	c_size = cluster_sizes_sampled[c_index]
-	plt.bar(xticks_pos - 0.250, clusters_comp_avg[:, 0], width=0.25, color='y', label = "A")
-	plt.bar(xticks_pos, clusters_comp_avg[:, 1], width=0.25, color='c', label = "B")
-	
+	#format axes and legend
+	#----------------------
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
 	ax.xaxis.set_ticks_position('bottom')
 	ax.yaxis.set_ticks_position('left')
-
-
 	ax.xaxis.set_major_locator(MaxNLocator(nbins=len(cluster_sizes_sampled) + 1))
 	ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
-	
 	ax.set_xticklabels([0] + cluster_sizes_sampled)
-	
+	fontP.set_size("small")
+	ax.legend(prop=fontP)
+	plt.xlabel('size of clusters', fontsize="small")
+	plt.ylabel('clusters composition (species %)', fontsize="small")
 	fig.savefig(filename_svg)
 	plt.close()
+	
+	#by groups
+	#=========
+	#colours_groups_dict[g_index]
 	
 	return
 
