@@ -1754,6 +1754,21 @@ def calculate_statistics():
 			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:
 				proteins_ctcts_res[s_index1,s_index2] /= float(np.sum(proteins_ctcts_res[s_index1,s_index2]))
 
+	#neighbours of proteins
+	#----------------------
+	global proteins_nb_neighbours_avg, proteins_nb_neighbours_std
+	global proteins_nb_neighbours_avg_time, proteins_nb_neighbours_std_time
+	proteins_nb_neighbours_avg = np.zeros((nb_species, nb_species))
+	proteins_nb_neighbours_std = np.zeros((nb_species, nb_species))
+	proteins_nb_neighbours_avg_time = np.zeros((nb_frames_to_process, nb_species, nb_species))
+	proteins_nb_neighbours_std_time = np.zeros((nb_frames_to_process, nb_species, nb_species))
+	for s_index in range(0, nb_species):
+		for ss_index in range(0, nb_species):
+			proteins_nb_neighbours_avg[s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
+			proteins_nb_neighbours_std[s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
+			proteins_nb_neighbours_avg_time[:, s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
+			proteins_nb_neighbours_std_time[:, s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
+			
 	#composition of clusters
 	#-----------------------
 	#by size
@@ -1833,6 +1848,51 @@ def write_warning():
 	output_stat.write("Warning: a single cluster size (" + str(cluster_sizes_sampled[0]) + ") was detected throughout the trajectory. Check the -m, -c, -r or -n options (see clustering_prot -h).")
 	output_stat.close()
 	
+	return
+
+#proteins neighbours
+def graph_proteins_neighbours():
+
+	#create filename
+	#---------------
+	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_proteins_neighbours.svg'
+
+	#create figure
+	#-------------
+	fig, ax = plt.subplots()
+	fig.suptitle("Average number of neighbours per protein")
+	
+	#plot data
+	#---------				
+	bar_width = 0.5/float(nb_species)
+	xticks_pos = np.arange(1, 1 + nb_species)
+	ax.set_xlim(0.5, 0.5 + nb_species)
+	ax.set_ylim(0, 3)
+	for s_index in range(0, nb_species):
+		s = proteins_species[s_index]
+		plt.bar(xticks_pos - 0.250 + s_index * bar_width, proteins_nb_neighbours_avg[:, s_index], yerr=proteins_nb_neighbours_std[:, s_index], ecolor='k', width=bar_width, color=proteins_colours[s], label=proteins_names[s])
+		
+	#format axes and legend
+	#----------------------
+	ax.spines['top'].set_visible(False)
+	ax.spines['right'].set_visible(False)
+	ax.xaxis.set_ticks_position('bottom')
+	ax.yaxis.set_ticks_position('left')
+	ax.xaxis.set_major_locator(MaxNLocator(nbins=nb_species + 1))
+	ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+	tmp_labels = []
+	for s_index in range(0, nb_species):
+		tmp_labels.append(proteins_names[proteins_species[s_index]])
+	ax.set_xticklabels([0] + tmp_labels)
+	plt.setp(ax.xaxis.get_majorticklabels(), fontsize="small" )
+	plt.setp(ax.yaxis.get_majorticklabels(), fontsize="small" )
+	fontP.set_size("small")
+	ax.legend(prop=fontP)
+	plt.xlabel('proteins species', fontsize="small")
+	plt.ylabel('average number of neighbours', fontsize="small")
+	fig.savefig(filename_svg)
+	plt.close()
+		
 	return
 
 #interactions: proteins
@@ -1915,7 +1975,7 @@ def graph_interactions_residues():
 			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:			
 				#create filename
 				#---------------
-				filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/1_interactions_residues_' + str(proteins_names[s1]) + '-' + str(proteins_names[s2]) + '.svg'
+				filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_interactions_residues_' + str(proteins_names[s1]) + '-' + str(proteins_names[s2]) + '.svg'
 			
 				#create figure
 				#-------------
@@ -3217,6 +3277,7 @@ print "\nWriting outputs..."
 
 if pres_oligomers:
 	process_oligomers()
+graph_proteins_neighbours()
 graph_interactions_proteins()
 graph_interactions_residues()
 graph_clusters_comp()
