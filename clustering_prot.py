@@ -1724,7 +1724,6 @@ def calculate_statistics():
 				tmp_mostrep_size = c_size
 			if args.cluster_groups_file != "no" and c_size != -1 and c_size != 99999:
 				g_index = groups_sizes_dict[c_size]
-				
 				clusters_nb_groups[g_index][f_index] += tmp_nb
 				clusters_pc_groups[g_index][f_index] += tmp_pc
 		
@@ -1771,34 +1770,41 @@ def calculate_statistics():
 			for n in range(0, nb):
 				for s_index in range(0, nb_species):
 					tmp_n[s_index] += 1
-					delta = comp[s_index] - tmp_mean[s_index]
+					delta = comp[s_index]/float(c_size) - tmp_mean[s_index]
 					tmp_mean[s_index] += delta/float(tmp_n[s_index])
-					tmp_M2[s_index] += delta * (comp[s_index]  - tmp_mean[s_index])
+					tmp_M2[s_index] += delta * (comp[s_index]/float(c_size)  - tmp_mean[s_index])
 		
 		for s_index in range(0, nb_species):
-			clusters_comp_avg[c_index, :] = tmp_mean/float(c_size)*100
+			clusters_comp_avg[c_index, :] = tmp_mean * 100
 			if tmp_n[s_index] > 0:
-				clusters_comp_std[c_index,:] = np.sqrt(tmp_M2[s_index] / float(tmp_n[s_index])) / float(c_size) * 100
+				clusters_comp_std[c_index,:] = np.sqrt(tmp_M2[s_index] / float(tmp_n[s_index])) * 100
 
 	#by group
-	#TO DO: implement average and std dev
 	if args.cluster_groups_file != "no":
-		#create data structure
 		global clusters_comp_avg_group
-		tmp_weight = np.zeros(groups_gmax)
+		global clusters_comp_std_group
 		clusters_comp_avg_group = np.zeros((groups_gmax, nb_species))
-		
-		#browse size and calculate group data
+		clusters_comp_std_group = np.zeros((groups_gmax, nb_species))
+
+		tmp_n = np.zeros((groups_gmax, nb_species))
+		tmp_mean = np.zeros((groups_gmax, nb_species))
+		tmp_M2 = np.zeros((groups_gmax, nb_species))
 		for c_index in range(0, len(cluster_sizes_sampled)):
 			c_size = cluster_sizes_sampled[c_index]
 			g_index = groups_sizes_dict[c_size]
-			clusters_comp_avg_group[g_index, :] += clusters_comp_avg[c_index,:] * np.sum(clusters_nb[c_size])
-			tmp_weight[g_index] += np.sum(clusters_nb[c_size])
-	
-		#normalise by total number of clusters added to group
+			for comp, nb in clusters_comp[c_size].items():
+				for n in range(0, nb):
+					for s_index in range(0, nb_species):
+						tmp_n[g_index, s_index] += 1
+						delta = comp[s_index]/float(c_size) - tmp_mean[g_index, s_index]
+						tmp_mean[g_index, s_index] += delta/float(tmp_n[g_index, s_index])
+						tmp_M2[g_index, s_index] += delta * (comp[s_index]/float(c_size)  - tmp_mean[g_index, s_index])
+			
 		for g_index in cluster_groups_sampled_TM:
-			clusters_comp_avg_group[g_index, :] /= float(tmp_weight[g_index])
-		
+			for s_index in range(0, nb_species):
+				clusters_comp_avg_group[g_index, :] = tmp_mean[g_index, :] * 100
+				if tmp_n[g_index, s_index] > 0:
+					clusters_comp_std_group[g_index, :] = np.sqrt(tmp_M2[g_index, s_index] / float(tmp_n[g_index, s_index])) * 100		
 	return
 
 #=========================================================================================
@@ -1882,7 +1888,7 @@ def graph_interactions_proteins():
 	plt.xlabel('protein index', fontsize="small")
 	plt.ylabel('index of proteins interacted with', fontsize="small")
 	cbar = plt.colorbar()
-	cbar.set_label('Relative number of contacts', size = 10)
+	cbar.set_label('relative number of contacts', size = 10)
 	cbar.ax.tick_params(labelsize = 8)
 
 	#save figure
@@ -1946,7 +1952,7 @@ def graph_interactions_residues():
 				#colour bar
 				#----------
 				cbar = plt.colorbar()
-				cbar.set_label('Relative number of contacts', size = 10)
+				cbar.set_label('relative number of contacts', size = 10)
 				cbar.formatter.set_powerlimits((0, 0))
 				cbar.update_ticks()
 				cbar.ax.tick_params(labelsize = 8)
@@ -2018,7 +2024,7 @@ def graph_clusters_comp():
 		ax.set_xlim(0.5, 0.5 + groups_gmax)
 		for s_index in range(0, nb_species):
 			s = proteins_species[s_index]
-			plt.bar(xticks_pos - 0.250 + s_index * bar_width, clusters_comp_avg_group[:, s_index], width=bar_width, color=proteins_colours[s], label=proteins_names[s])
+			plt.bar(xticks_pos - 0.250 + s_index * bar_width, clusters_comp_avg_group[:, s_index], yerr=clusters_comp_std_group[:, s_index], ecolor='k', width=bar_width, color=proteins_colours[s], label=proteins_names[s])
 		
 		#format axes and legend
 		#----------------------
