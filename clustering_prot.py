@@ -1785,7 +1785,6 @@ def calculate_statistics():
 		global clusters_comp_std_group
 		clusters_comp_avg_group = np.zeros((groups_gmax, nb_species))
 		clusters_comp_std_group = np.zeros((groups_gmax, nb_species))
-
 		tmp_n = np.zeros((groups_gmax, nb_species))
 		tmp_mean = np.zeros((groups_gmax, nb_species))
 		tmp_M2 = np.zeros((groups_gmax, nb_species))
@@ -1795,7 +1794,7 @@ def calculate_statistics():
 			for comp, nb in clusters_comp[c_size].items():
 				for n in range(0, nb):
 					for s_index in range(0, nb_species):
-						tmp_n[g_index, s_index] += 1
+						tmp_n[g_index, s_index] += 1						
 						delta = comp[s_index]/float(c_size) - tmp_mean[g_index, s_index]
 						tmp_mean[g_index, s_index] += delta/float(tmp_n[g_index, s_index])
 						tmp_M2[g_index, s_index] += delta * (comp[s_index]/float(c_size)  - tmp_mean[g_index, s_index])
@@ -1805,6 +1804,7 @@ def calculate_statistics():
 				clusters_comp_avg_group[g_index, :] = tmp_mean[g_index, :] * 100
 				if tmp_n[g_index, s_index] > 0:
 					clusters_comp_std_group[g_index, :] = np.sqrt(tmp_M2[g_index, s_index] / float(tmp_n[g_index, s_index])) * 100		
+
 	return
 
 #=========================================================================================
@@ -2022,6 +2022,7 @@ def graph_clusters_comp():
 		bar_width = 0.5/float(nb_species)
 		xticks_pos = np.arange(1, 1 + groups_gmax)		
 		ax.set_xlim(0.5, 0.5 + groups_gmax)
+		ax.set_ylim(0, 100)
 		for s_index in range(0, nb_species):
 			s = proteins_species[s_index]
 			plt.bar(xticks_pos - 0.250 + s_index * bar_width, clusters_comp_avg_group[:, s_index], yerr=clusters_comp_std_group[:, s_index], ecolor='k', width=bar_width, color=proteins_colours[s], label=proteins_names[s])
@@ -2046,7 +2047,7 @@ def graph_clusters_comp():
 		plt.ylabel('clusters composition (species %)', fontsize="small")
 		fig.savefig(filename_svg)
 		plt.close()
-	
+		
 	return
 
 #sizes
