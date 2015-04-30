@@ -1751,8 +1751,11 @@ def calculate_statistics():
 	#for each pair of proteins normalise the number of contacts between pair of residues by the total number of contacts over all residues
 	for s_index1 in range(0,nb_species):
 		for s_index2 in range(s_index1, nb_species):
-			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:
+			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:				
 				proteins_ctcts_res[s_index1,s_index2] /= float(np.sum(proteins_ctcts_res[s_index1,s_index2]))
+				#divide values on diagonal by two in case of homo-interactions
+				if s_index2 == s_index1:
+					proteins_ctcts_res[s_index1,s_index2][np.arange(proteins_length[proteins_species[s_index1]]), np.arange(proteins_length[proteins_species[s_index2]])] /= float(2)
 
 	#neighbours of proteins
 	#----------------------
@@ -1984,28 +1987,31 @@ def graph_interactions_residues():
 				
 				#plot data
 				#---------				
-				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2] > args.res_show
+				if s2 == s1:
+					tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2] > args.res_show/float(2)
+				else:
+					tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2] > args.res_show
 				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2][np.any(tmp_s1s2_plot, axis = 1)][:,np.any(tmp_s1s2_plot, axis = 0)]
-				plt.pcolormesh(tmp_s1s2_plot.T, cmap = plt.cm.Greens)
+				plt.pcolormesh(tmp_s1s2_plot, cmap = plt.cm.Greens)
 								
 				#label axes
 				#----------
-				plt.axis([0, np.shape(tmp_s1s2_plot)[0], 0, np.shape(tmp_s1s2_plot)[1]])
-				plt.xlabel(str(proteins_names[s1]) + ' residues', fontsize="small")
-				plt.ylabel(str(proteins_names[s2]) + ' residues', fontsize="small")
+				plt.axis([0, np.shape(tmp_s1s2_plot)[1], 0, np.shape(tmp_s1s2_plot)[0]])
+				plt.xlabel(str(proteins_names[s2]) + ' residues', fontsize="small")
+				plt.ylabel(str(proteins_names[s1]) + ' residues', fontsize="small")
 				
 				#label axes ticks
 				#----------------
 				s1_labels = [proteins_residues[s1][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 1)) if res]
 				s2_labels = [proteins_residues[s2][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 0)) if res]
-				plt.xticks(np.arange(0.5, len(s1_labels) + 0.5), rotation = 90)
-				plt.yticks(np.arange(0.5, len(s2_labels) + 0.5))
+				plt.xticks(np.arange(0.5, len(s2_labels) + 0.5), rotation = 90)
+				plt.yticks(np.arange(0.5, len(s1_labels) + 0.5))
 				ax.spines['top'].set_visible(False)
 				ax.spines['right'].set_visible(False)
 				ax.xaxis.set_ticks_position('bottom')
 				ax.yaxis.set_ticks_position('left')
-				ax.set_xticklabels(s1_labels)
-				ax.set_yticklabels(s2_labels)
+				ax.set_xticklabels(s2_labels)
+				ax.set_yticklabels(s1_labels)
 				plt.setp(ax.xaxis.get_majorticklabels(), fontsize="xx-small" )
 				plt.setp(ax.yaxis.get_majorticklabels(), fontsize="xx-small" )
 				
@@ -2508,7 +2514,10 @@ def graph_xvg_sizes_interfacial():
 	plt.close()
 
 	return
+
 def graph_aggregation_2D_sizes():
+
+	#organise it so that the species are displayed as horizontal layers
 
 	#create filenames
 	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_1_plots_2D/png/1_1_clusterprot_2D.png'
@@ -3134,7 +3143,7 @@ def write_xtc_annotation(action):										#DONE
 			#output VMD protein selection line
 			tmp_prot_sele = ""
 			for p_index in range(0, nb_proteins):
-				tmp_prot_sele += "." + proteins_sele_string_VMD[p_index]
+				tmp_prot_sele += "." + proteins_sele_string_VMD[prot_index2specie[p_index]][prot_index2rel[p_index]]
 			f.write(tmp_prot_sele[1:] + "\n")
 			#ouput min and max size
 			f.write(str(min(cluster_sizes_sampled)) + "." + str(max(cluster_sizes_sampled)) + "\n")
@@ -3152,7 +3161,7 @@ def write_xtc_annotation(action):										#DONE
 			with open(output_xtc_annotate_cluster_group, 'w') as f:
 				#output VMD protein selection line
 				for p_index in range(0, nb_proteins):
-					tmp_prot_sele += "." + proteins_sele_string_VMD[p_index]
+					tmp_prot_sele += "." + proteins_sele_string_VMD[prot_index2specie[p_index]][prot_index2rel[p_index]]
 				f.write(tmp_prot_sele[1:] + "\n")
 				#ouput min and max size
 				f.write(str(min(cluster_groups_sampled_TM)) + "." + str(max(cluster_groups_sampled_TM)) + "\n")
@@ -3196,21 +3205,20 @@ if args.xtcfilename != "no" and args.buffer_size != -1:
 print "\nDetecting proteins clusters..."
 
 #case: gro file
-#==============
+#--------------
 if args.xtcfilename == "no":
+	#frame properties
 	frames_nb[0] = 1
 	frames_time[0] = 0
 	box_dim = U.dimensions
 
 	#detect clusters
-	#---------------
 	if args.m_algorithm != "density":
 		clusters = detect_clusters_connectivity(get_distances(box_dim), box_dim)
 	else:
 		clusters = detect_clusters_density(get_distances(box_dim), box_dim)
 	
-	#assign current cluster status
-	#-----------------------------
+	#process clusters
 	if args.cutoff_leaflet == "no":
 		process_clusters(clusters, 0, 1)
 	else:
@@ -3218,34 +3226,31 @@ if args.xtcfilename == "no":
 	print ""
 
 #case: xtc file
-#==============
+#--------------
 else:
 	for f_index in range(0,nb_frames_to_process):
 		#frame properties
 		ts = U.trajectory[frames_to_process[f_index]]
 		f_time = ts.time/float(1000)
 		f_nb = ts.frame
+		f_write = frames_to_write[f_index]
 		frames_nb[f_index] = f_nb
 		frames_time[f_index] = f_time
-		f_write = frames_to_write[f_index]
 		box_dim = U.trajectory.ts.dimensions
 
 		#detect clusters
-		#---------------
 		if args.m_algorithm != "density":
 			clusters = detect_clusters_connectivity(get_distances(box_dim), box_dim)
 		else:
 			clusters = detect_clusters_density(get_distances(box_dim), box_dim)
 		
-		#assign current cluster status
-		#-----------------------------
+		#process clusters
 		if args.cutoff_leaflet == "no":
 			process_clusters(clusters, f_index, f_index)
 		else:
 			process_clusters_TM(clusters, f_index, box_dim, f_index)
 		
-		#output results
-		#--------------
+		#write snapshots
 		if f_write:
 			print "  (writing snapshot...)"
 			write_frame_stat(f_nb, f_index, f_time)
@@ -3253,7 +3258,6 @@ else:
 			write_frame_annotation(f_index, f_time)
 
 		#buffer counter for outputting xtc annotation files
-		#--------------------------------------------------
 		if args.buffer_size != -1:
 			if vmd_counter == args.buffer_size:
 				vmd_counter = 0
@@ -3283,7 +3287,7 @@ graph_interactions_residues()
 graph_clusters_comp()
 
 #case: gro file
-#==============
+#--------------
 if args.xtcfilename == "no":
 	if len(cluster_sizes_sampled)>1:
 		print " -writing statistics..."
@@ -3297,34 +3301,28 @@ if args.xtcfilename == "no":
 		write_warning()
 
 #case: xtc file
-#==============
+#--------------
 else:
 	if len(cluster_sizes_sampled)>1:
-		#writing statistics
 		print " -writing statistics..."
 		write_frame_stat("all", 0, 0)
-				
-		#write annotation files for VMD
 		if args.buffer_size != -1:
 			write_xtc_annotation("finish")
-		
-		#write xvg and graphs
+		#to comment
 		print " -writing xvg and graphs..."
-		graph_aggregation_2D_sizes()
-		write_xvg_biggest()
-		graph_xvg_biggest()
-		write_xvg_mostrep()
-		graph_xvg_mostrep()
-
-		write_xvg_sizes_TM()
-		graph_xvg_sizes_TM()
-		write_xvg_sizes_interfacial()
-		graph_xvg_sizes_interfacial()
-		if args.cluster_groups_file != "no":
-			write_xvg_groups()
-			graph_xvg_groups()
-			graph_aggregation_2D_groups()
-			write_stability_groups()
+		#graph_aggregation_2D_sizes()
+		#write_xvg_biggest()
+		#graph_xvg_biggest()
+		#write_xvg_mostrep()
+		#graph_xvg_mostrep()
+		#write_xvg_sizes_TM()
+		#graph_xvg_sizes_TM()
+		#write_xvg_sizes_interfacial()
+		#graph_xvg_sizes_interfacial()
+		#if args.cluster_groups_file != "no":
+			#write_xvg_groups()
+			#graph_xvg_groups()
+			#graph_aggregation_2D_groups()
 	else:
 		print "\n"
 		print "Warning: a single cluster size (", str(cluster_sizes_sampled[0]), ") was detected throughout the trajectory, maybe check the cluster detection options (see clustering_prot -h)."
