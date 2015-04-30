@@ -1759,10 +1759,11 @@ def calculate_statistics():
 
 	#neighbours of proteins
 	#----------------------
-	global proteins_nb_neighbours_avg, proteins_nb_neighbours_std
-	global proteins_nb_neighbours_avg_time, proteins_nb_neighbours_std_time
-	proteins_nb_neighbours_avg = np.zeros((nb_species, nb_species))
-	proteins_nb_neighbours_std = np.zeros((nb_species, nb_species))
+	global proteins_nb_neighbours_avg_detail, proteins_nb_neighbours_std_detail
+	global proteins_nb_neighbours_avg_time_all, proteins_nb_neighbours_std_time_all
+	global proteins_nb_neighbours_avg_time_detail, proteins_nb_neighbours_std_time_detail
+	proteins_nb_neighbours_avg_detail = np.zeros((nb_species, nb_species))
+	proteins_nb_neighbours_std_detail = np.zeros((nb_species, nb_species))
 	proteins_nb_neighbours_avg_time_all = np.zeros((nb_frames_to_process, nb_species))
 	proteins_nb_neighbours_std_time_all = np.zeros((nb_frames_to_process, nb_species))
 	proteins_nb_neighbours_avg_time_detail = np.zeros((nb_frames_to_process, nb_species, nb_species))
@@ -1771,8 +1772,8 @@ def calculate_statistics():
 		proteins_nb_neighbours_avg_time_all[:, s_index] = np.average(np.sum(proteins_nb_neighbours[:, prot_index2sindex == s_index, :], axis = 1))
 		proteins_nb_neighbours_std_time_all[:, s_index] = np.std(np.sum(proteins_nb_neighbours[:, prot_index2sindex == s_index, :], axis = 1))
 		for ss_index in range(0, nb_species):
-			proteins_nb_neighbours_avg[s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
-			proteins_nb_neighbours_std[s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
+			proteins_nb_neighbours_avg_detail[s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
+			proteins_nb_neighbours_std_detail[s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
 			proteins_nb_neighbours_avg_time_detail[:, s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
 			proteins_nb_neighbours_std_time_detail[:, s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
 			
@@ -1877,7 +1878,7 @@ def graph_proteins_neighbours():
 		ax.set_ylim(0, 3)
 		for s_index in range(0, nb_species):
 			s = proteins_species[s_index]
-			plt.bar(xticks_pos - 0.250 + s_index * bar_width, proteins_nb_neighbours_avg[:, s_index], yerr=proteins_nb_neighbours_std[:, s_index], ecolor='k', width=bar_width, color=proteins_colours[s], label=proteins_names[s])
+			plt.bar(xticks_pos - 0.250 + s_index * bar_width, proteins_nb_neighbours_avg_detail[:, s_index], yerr=proteins_nb_neighbours_std_detail[:, s_index], ecolor='k', width=bar_width, color=proteins_colours[s], label=proteins_names[s])
 			
 		#format axes and legend
 		ax.spines['top'].set_visible(False)
