@@ -1763,14 +1763,18 @@ def calculate_statistics():
 	global proteins_nb_neighbours_avg_time, proteins_nb_neighbours_std_time
 	proteins_nb_neighbours_avg = np.zeros((nb_species, nb_species))
 	proteins_nb_neighbours_std = np.zeros((nb_species, nb_species))
-	proteins_nb_neighbours_avg_time = np.zeros((nb_frames_to_process, nb_species, nb_species))
-	proteins_nb_neighbours_std_time = np.zeros((nb_frames_to_process, nb_species, nb_species))
+	proteins_nb_neighbours_avg_time_all = np.zeros((nb_frames_to_process, nb_species))
+	proteins_nb_neighbours_std_time_all = np.zeros((nb_frames_to_process, nb_species))
+	proteins_nb_neighbours_avg_time_detail = np.zeros((nb_frames_to_process, nb_species, nb_species))
+	proteins_nb_neighbours_std_time_detail = np.zeros((nb_frames_to_process, nb_species, nb_species))
 	for s_index in range(0, nb_species):
+		proteins_nb_neighbours_avg_time_all[:, s_index] = np.average(np.sum(proteins_nb_neighbours[:, prot_index2sindex == s_index, :], axis = 1))
+		proteins_nb_neighbours_std_time_all[:, s_index] = np.std(np.sum(proteins_nb_neighbours[:, prot_index2sindex == s_index, :], axis = 1))
 		for ss_index in range(0, nb_species):
 			proteins_nb_neighbours_avg[s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
 			proteins_nb_neighbours_std[s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
-			proteins_nb_neighbours_avg_time[:, s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
-			proteins_nb_neighbours_std_time[:, s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
+			proteins_nb_neighbours_avg_time_detail[:, s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
+			proteins_nb_neighbours_std_time_detail[:, s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
 			
 	#composition of clusters
 	#-----------------------
@@ -1856,46 +1860,78 @@ def write_warning():
 #proteins neighbours
 def graph_proteins_neighbours():
 
-	#create filename
-	#---------------
-	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_proteins_neighbours.svg'
-
-	#create figure
-	#-------------
-	fig, ax = plt.subplots()
-	fig.suptitle("Average number of neighbours per protein")
+	#case: gro file
+	#--------------
+	if args.xtcfilename == "no":
+		#create filename
+		filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_proteins_neighbours.svg'
 	
-	#plot data
-	#---------				
-	bar_width = 0.5/float(nb_species)
-	xticks_pos = np.arange(1, 1 + nb_species)
-	ax.set_xlim(0.5, 0.5 + nb_species)
-	ax.set_ylim(0, 3)
-	for s_index in range(0, nb_species):
-		s = proteins_species[s_index]
-		plt.bar(xticks_pos - 0.250 + s_index * bar_width, proteins_nb_neighbours_avg[:, s_index], yerr=proteins_nb_neighbours_std[:, s_index], ecolor='k', width=bar_width, color=proteins_colours[s], label=proteins_names[s])
+		#create figure
+		fig, ax = plt.subplots()
+		fig.suptitle("Average number of neighbours per protein")
 		
-	#format axes and legend
-	#----------------------
-	ax.spines['top'].set_visible(False)
-	ax.spines['right'].set_visible(False)
-	ax.xaxis.set_ticks_position('bottom')
-	ax.yaxis.set_ticks_position('left')
-	ax.xaxis.set_major_locator(MaxNLocator(nbins=nb_species + 1))
-	ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
-	tmp_labels = []
-	for s_index in range(0, nb_species):
-		tmp_labels.append(proteins_names[proteins_species[s_index]])
-	ax.set_xticklabels([0] + tmp_labels)
-	plt.setp(ax.xaxis.get_majorticklabels(), fontsize="small" )
-	plt.setp(ax.yaxis.get_majorticklabels(), fontsize="small" )
-	fontP.set_size("small")
-	ax.legend(prop=fontP)
-	plt.xlabel('proteins species', fontsize="small")
-	plt.ylabel('average number of neighbours', fontsize="small")
-	fig.savefig(filename_svg)
-	plt.close()
+		#plot data
+		bar_width = 0.5/float(nb_species)
+		xticks_pos = np.arange(1, 1 + nb_species)
+		ax.set_xlim(0.5, 0.5 + nb_species)
+		ax.set_ylim(0, 3)
+		for s_index in range(0, nb_species):
+			s = proteins_species[s_index]
+			plt.bar(xticks_pos - 0.250 + s_index * bar_width, proteins_nb_neighbours_avg[:, s_index], yerr=proteins_nb_neighbours_std[:, s_index], ecolor='k', width=bar_width, color=proteins_colours[s], label=proteins_names[s])
+			
+		#format axes and legend
+		ax.spines['top'].set_visible(False)
+		ax.spines['right'].set_visible(False)
+		ax.xaxis.set_ticks_position('bottom')
+		ax.yaxis.set_ticks_position('left')
+		ax.xaxis.set_major_locator(MaxNLocator(nbins=nb_species + 1))
+		ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+		tmp_labels = []
+		for s_index in range(0, nb_species):
+			tmp_labels.append(proteins_names[proteins_species[s_index]])
+		ax.set_xticklabels([0] + tmp_labels)
+		plt.setp(ax.xaxis.get_majorticklabels(), fontsize="small" )
+		plt.setp(ax.yaxis.get_majorticklabels(), fontsize="small" )
+		fontP.set_size("small")
+		ax.legend(prop=fontP)
+		plt.xlabel('proteins species', fontsize="small")
+		plt.ylabel('average number of neighbours', fontsize="small")
+		fig.savefig(filename_svg)
+		plt.close()
 		
+	#case: xtc file
+	#--------------
+	else:
+		#create filename
+		filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_proteins_neighbours.svg'
+	
+		#create figure
+		fig, ax = plt.subplots()
+		fig.suptitle("Average number of neighbours per protein")
+		
+		#plot data
+		ax.set_ylim(0, 3)
+		for s_index in range(0, nb_species):
+			s = proteins_species[s_index]
+			plt.plot(frames_time, proteins_nb_neighbours_avg_time_all[:, s_index], color = proteins_colours[s], linewidth = 2.0, label = proteins_names[s])
+			plt.fill_between(frames_time, proteins_nb_neighbours_avg_time_all[:, s_index] - proteins_nb_neighbours_std_time_all[:, s_index], proteins_nb_neighbours_avg_time_all[:, s_index] + proteins_nb_neighbours_std_time_all[:, s_index], color = colours_lipids[s], edgecolor = colours_lipids[s], linewidth = 0, alpha = 0.2)
+			
+		#format axes and legend
+		ax.spines['top'].set_visible(False)
+		ax.spines['right'].set_visible(False)
+		ax.xaxis.set_ticks_position('bottom')
+		ax.yaxis.set_ticks_position('left')
+		ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
+		ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+		plt.setp(ax.xaxis.get_majorticklabels(), fontsize="small" )
+		plt.setp(ax.yaxis.get_majorticklabels(), fontsize="small" )
+		fontP.set_size("small")
+		ax.legend(prop=fontP)
+		plt.xlabel('time (ns)', fontsize="small")
+		plt.ylabel('average number of neighbours', fontsize="small")
+		fig.savefig(filename_svg)
+		plt.close()
+
 	return
 
 #interactions: proteins
@@ -2116,6 +2152,8 @@ def graph_clusters_comp():
 		
 	return
 
+
+
 #sizes
 def write_xvg_biggest():
 	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_3_biggest/xvg/1_3_clusterprot_biggest.txt'
@@ -2174,6 +2212,101 @@ def write_xvg_mostrep():
 		results = str(frames_time[f_index]) + "	" + str(cluster_mostrep_size[f_index]) + "	" + str(round(cluster_mostrep_pc[f_index],2)) + "	" + str(cluster_mostrep_nb[f_index])
 		output_xvg.write(results + "\n")
 	output_xvg.close()
+	return
+def write_xvg_sizes_TM():
+
+	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_TM.txt'
+	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_TM.xvg'
+	output_txt = open(filename_txt, 'w')
+	output_txt.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
+	output_txt.write("# Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_2_clusterprot_1D_TM.xvg.\n")
+	output_xvg = open(filename_xvg, 'w')
+	output_xvg.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
+	output_xvg.write("# - proteins detected: " + str(nb_proteins) + "\n")
+	output_xvg.write("# - algorithm chosen: " + str(args.m_algorithm) + "\n")
+	if args.m_algorithm == "density":
+		output_xvg.write("# - search radius: " + str(args.dbscan_dist) + "\n")
+		output_xvg.write("# - nb of neighbours: " + str(args.dbscan_nb) + "\n")
+	else:
+		output_xvg.write("# - cutoff for contact: " + str(args.cutoff_connect) + "\n")
+	output_xvg.write("@ title \"Evolution of protein aggregation\"\n")
+	output_xvg.write("@ xaxis  label \"time (ns)\"\n")
+	output_xvg.write("@ autoscale ONREAD xaxes\n")
+	output_xvg.write("@ TYPE XY\n")
+	output_xvg.write("@ view 0.15, 0.15, 0.95, 0.85\n")
+	output_xvg.write("@ legend on\n")
+	output_xvg.write("@ legend box on\n")
+	output_xvg.write("@ legend loctype view\n")
+	output_xvg.write("@ legend 0.98, 0.8\n")
+	output_xvg.write("@ legend length " + str(nb_proteins*2) + "\n")
+	#write caption: %
+	for c_index in range(0, nb_proteins):
+		c_size = c_index + 1
+		output_xvg.write("@ s" + str(c_index) + " legend \"% " + str(c_size) + "\"\n")
+		output_txt.write("1_2_clusterprot_1D.xvg," + str(c_index + 1) + ",% " + str(c_size) + "," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[c_size])) + "\n")
+	#write caption: nb
+	for c_index in range(0, nb_proteins):
+		c_size = c_index + 1
+		output_xvg.write("@ s" + str(nb_proteins + c_index) + " legend \"nb " + str(c_size) + "\"\n")
+		output_txt.write("1_2_clusterprot_1D.xvg," + str(nb_proteins + c_index + 1) + ",nb " + str(c_size) + "," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[c_size])) + "\n")
+	output_txt.close()
+	#write results
+	for f_index in range(0,nb_frames_to_process):
+		results = str(frames_time[f_index])
+		for c_size in range(1, nb_proteins + 1):
+			if c_size in cluster_sizes_sampled_TM:
+				results += "	" + str(round(clusters_pc[c_size][f_index],2))
+			else: 
+				results += "	0"		
+		for c_size in range(1, nb_proteins + 1):
+			if c_size in cluster_sizes_sampled_TM:
+				results += "	" + str(round(clusters_nb[c_size][f_index],2))
+			else: 
+				results += "	0"		
+		output_xvg.write(results + "\n")
+	output_xvg.close()
+	
+	return
+def write_xvg_sizes_interfacial():
+
+	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_interfacial.txt'
+	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_interfacial.xvg'
+	output_txt = open(filename_txt, 'w')
+	output_txt.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
+	output_txt.write("# Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_2_clusterprot_1D_interfacial.xvg.\n")
+	output_xvg = open(filename_xvg, 'w')
+	output_xvg.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
+	output_xvg.write("# - proteins detected: " + str(nb_proteins) + "\n")
+	output_xvg.write("# - algorithm chosen: " + str(args.m_algorithm) + "\n")
+	if args.m_algorithm == "density":
+		output_xvg.write("# - search radius: " + str(args.dbscan_dist) + "\n")
+		output_xvg.write("# - nb of neighbours: " + str(args.dbscan_nb) + "\n")
+	else:
+		output_xvg.write("# - cutoff for contact: " + str(args.cutoff_connect) + "\n")
+	output_xvg.write("@ title \"Evolution of the number of interfacial proteins\"\n")
+	output_xvg.write("@ xaxis  label \"time (ns)\"\n")
+	output_xvg.write("@ autoscale ONREAD xaxes\n")
+	output_xvg.write("@ TYPE XY\n")
+	output_xvg.write("@ view 0.15, 0.15, 0.95, 0.85\n")
+	output_xvg.write("@ legend on\n")
+	output_xvg.write("@ legend box on\n")
+	output_xvg.write("@ legend loctype view\n")
+	output_xvg.write("@ legend 0.98, 0.8\n")
+	output_xvg.write("@ legend length 4\n")
+	output_xvg.write("@ s0 legend \"lower (%)\"\n")
+	output_xvg.write("@ s1 legend \"upper (%)\"\n")
+	output_xvg.write("@ s2 legend \"lower (nb)\"\n")
+	output_xvg.write("@ s3 legend \"upper (nb)\"\n")
+	output_txt.write("1_2_clusterprot_1D_interfacial.xvg,1, lower (%)," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[-1])) + "\n")
+	output_txt.write("1_2_clusterprot_1D_interfacial.xvg,2, upper (%)," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[99999])) + "\n")
+	output_txt.write("1_2_clusterprot_1D_interfacial.xvg,3, lower (nb)," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[-1])) + "\n")
+	output_txt.write("1_2_clusterprot_1D_interfacial.xvg,4, upper (nb)," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[99999])) + "\n")
+	output_txt.close()
+	for f_index in range(0,nb_frames_to_process):
+		results = str(frames_time[f_index]) + "	" + str(round(clusters_pc[-1][f_index],2)) + "	" + str(round(clusters_pc[99999][f_index],2)) + "	" + str(round(clusters_nb[-1][f_index],2)) + "	" + str(round(clusters_nb[99999][f_index],2))
+		output_xvg.write(results + "\n")
+	output_xvg.close()
+	
 	return
 def graph_xvg_biggest():
 	#create filenames
@@ -2289,60 +2422,6 @@ def graph_xvg_mostrep():
 	fig.savefig(filename_svg)
 	plt.close()
 	return
-def write_xvg_sizes_TM():
-
-	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_TM.txt'
-	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_TM.xvg'
-	output_txt = open(filename_txt, 'w')
-	output_txt.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
-	output_txt.write("# Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_2_clusterprot_1D_TM.xvg.\n")
-	output_xvg = open(filename_xvg, 'w')
-	output_xvg.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
-	output_xvg.write("# - proteins detected: " + str(nb_proteins) + "\n")
-	output_xvg.write("# - algorithm chosen: " + str(args.m_algorithm) + "\n")
-	if args.m_algorithm == "density":
-		output_xvg.write("# - search radius: " + str(args.dbscan_dist) + "\n")
-		output_xvg.write("# - nb of neighbours: " + str(args.dbscan_nb) + "\n")
-	else:
-		output_xvg.write("# - cutoff for contact: " + str(args.cutoff_connect) + "\n")
-	output_xvg.write("@ title \"Evolution of protein aggregation\"\n")
-	output_xvg.write("@ xaxis  label \"time (ns)\"\n")
-	output_xvg.write("@ autoscale ONREAD xaxes\n")
-	output_xvg.write("@ TYPE XY\n")
-	output_xvg.write("@ view 0.15, 0.15, 0.95, 0.85\n")
-	output_xvg.write("@ legend on\n")
-	output_xvg.write("@ legend box on\n")
-	output_xvg.write("@ legend loctype view\n")
-	output_xvg.write("@ legend 0.98, 0.8\n")
-	output_xvg.write("@ legend length " + str(nb_proteins*2) + "\n")
-	#write caption: %
-	for c_index in range(0, nb_proteins):
-		c_size = c_index + 1
-		output_xvg.write("@ s" + str(c_index) + " legend \"% " + str(c_size) + "\"\n")
-		output_txt.write("1_2_clusterprot_1D.xvg," + str(c_index + 1) + ",% " + str(c_size) + "," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[c_size])) + "\n")
-	#write caption: nb
-	for c_index in range(0, nb_proteins):
-		c_size = c_index + 1
-		output_xvg.write("@ s" + str(nb_proteins + c_index) + " legend \"nb " + str(c_size) + "\"\n")
-		output_txt.write("1_2_clusterprot_1D.xvg," + str(nb_proteins + c_index + 1) + ",nb " + str(c_size) + "," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[c_size])) + "\n")
-	output_txt.close()
-	#write results
-	for f_index in range(0,nb_frames_to_process):
-		results = str(frames_time[f_index])
-		for c_size in range(1, nb_proteins + 1):
-			if c_size in cluster_sizes_sampled_TM:
-				results += "	" + str(round(clusters_pc[c_size][f_index],2))
-			else: 
-				results += "	0"		
-		for c_size in range(1, nb_proteins + 1):
-			if c_size in cluster_sizes_sampled_TM:
-				results += "	" + str(round(clusters_nb[c_size][f_index],2))
-			else: 
-				results += "	0"		
-		output_xvg.write(results + "\n")
-	output_xvg.close()
-	
-	return
 def graph_xvg_sizes_TM():
 	
 	#create filenames
@@ -2409,47 +2488,6 @@ def graph_xvg_sizes_TM():
 	plt.close()
 
 	return
-def write_xvg_sizes_interfacial():
-
-	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_interfacial.txt'
-	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_interfacial.xvg'
-	output_txt = open(filename_txt, 'w')
-	output_txt.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
-	output_txt.write("# Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_2_clusterprot_1D_interfacial.xvg.\n")
-	output_xvg = open(filename_xvg, 'w')
-	output_xvg.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
-	output_xvg.write("# - proteins detected: " + str(nb_proteins) + "\n")
-	output_xvg.write("# - algorithm chosen: " + str(args.m_algorithm) + "\n")
-	if args.m_algorithm == "density":
-		output_xvg.write("# - search radius: " + str(args.dbscan_dist) + "\n")
-		output_xvg.write("# - nb of neighbours: " + str(args.dbscan_nb) + "\n")
-	else:
-		output_xvg.write("# - cutoff for contact: " + str(args.cutoff_connect) + "\n")
-	output_xvg.write("@ title \"Evolution of the number of interfacial proteins\"\n")
-	output_xvg.write("@ xaxis  label \"time (ns)\"\n")
-	output_xvg.write("@ autoscale ONREAD xaxes\n")
-	output_xvg.write("@ TYPE XY\n")
-	output_xvg.write("@ view 0.15, 0.15, 0.95, 0.85\n")
-	output_xvg.write("@ legend on\n")
-	output_xvg.write("@ legend box on\n")
-	output_xvg.write("@ legend loctype view\n")
-	output_xvg.write("@ legend 0.98, 0.8\n")
-	output_xvg.write("@ legend length 4\n")
-	output_xvg.write("@ s0 legend \"lower (%)\"\n")
-	output_xvg.write("@ s1 legend \"upper (%)\"\n")
-	output_xvg.write("@ s2 legend \"lower (nb)\"\n")
-	output_xvg.write("@ s3 legend \"upper (nb)\"\n")
-	output_txt.write("1_2_clusterprot_1D_interfacial.xvg,1, lower (%)," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[-1])) + "\n")
-	output_txt.write("1_2_clusterprot_1D_interfacial.xvg,2, upper (%)," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[99999])) + "\n")
-	output_txt.write("1_2_clusterprot_1D_interfacial.xvg,3, lower (nb)," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[-1])) + "\n")
-	output_txt.write("1_2_clusterprot_1D_interfacial.xvg,4, upper (nb)," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[99999])) + "\n")
-	output_txt.close()
-	for f_index in range(0,nb_frames_to_process):
-		results = str(frames_time[f_index]) + "	" + str(round(clusters_pc[-1][f_index],2)) + "	" + str(round(clusters_pc[99999][f_index],2)) + "	" + str(round(clusters_nb[-1][f_index],2)) + "	" + str(round(clusters_nb[99999][f_index],2))
-		output_xvg.write(results + "\n")
-	output_xvg.close()
-	
-	return
 def graph_xvg_sizes_interfacial():
 	
 	#create filenames
@@ -2514,7 +2552,6 @@ def graph_xvg_sizes_interfacial():
 	plt.close()
 
 	return
-
 def graph_aggregation_2D_sizes():
 
 	#organise it so that the species are displayed as horizontal layers
@@ -2714,7 +2751,7 @@ def graph_xvg_groups():
 	plt.close()
 
 	return
-def graph_aggregation_2D_groups():										#TO CHECK
+def graph_aggregation_2D_groups():
 	
 	#create filenames
 	filename_png=os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/2_1_plots_2D/png/2_1_clusterprot_2D.png'
@@ -2802,44 +2839,6 @@ def graph_aggregation_2D_groups():										#TO CHECK
 	fig.savefig(filename_svg, transparent = True)
 	plt.close()
 			
-	return
-def write_stability_groups():											#TO CHECK
-	
-	filename_details = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/2_0_clusterprot_stability.stat'
-	output_stat = open(filename_details, 'w')		
-	output_stat.write("[protein clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
-	output_stat.write("\n")
-
-	#general info
-	output_stat.write("1. Nb of proteins: " + str(nb_proteins) + "\n")
-	output_stat.write("2. Cluster detection Method:\n")
-	if args.m_algorithm=="min":
-		output_stat.write(" - connectivity based (min distances)\n")
-		output_stat.write(" - contact cutoff = " + str(args.cutoff_connect) + " Angstrom\n")
-	elif args.m_algorithm=="cog":
-		output_stat.write(" - connectivity based (cog distances)\n")
-		output_stat.write(" - contact cutoff = " + str(args.cutoff_connect) + " Angstrom\n")
-	else:
-		output_stat.write(" - density based (DBSCAN)\n")
-		output_stat.write(" - search radius = " + str(args.dbscan_dist) + " Angstrom, nb of neighbours = " + str(args.dbscan_nb) + "\n")
-	output_stat.write("\n")
-	output_stat.write("Maximum stability (in number of consecutive frames) for each cluster groups\n")
-	output_stat.write("Note: frames skipped are not taken into account (the nb below correspond to consecutive frames processed)\n")
-	
-	#group info
-	tmp_cap1 = "sizes	"
-	tmp_cap2 = "-----"
-	for g_index in cluster_groups_sampled_TM:
-		if g_index == groups_number:
-			tmp_cap1 += "	other"
-		elif groups_boundaries[g_index][1]==100000:
-			tmp_cap1 += "	>=" + str(groups_boundaries[g_index][0])
-		else:
-			tmp_cap1+="	" + str(groups_boundaries[g_index][0]) + "-" + str(groups_boundaries[g_index][1])
-		tmp_cap2 += "--------"
-
-	output_stat.close()
-	
 	return
 
 #annotations
