@@ -1361,7 +1361,7 @@ def process_clusters(clusters, f_index, f_nb):
 			c_size = np.size(cluster)
 			g_index = groups_sizes_dict[c_size]
 			proteins_size[cluster, f_index] = c_size
-			proteins_cluster_status_groups[cluster, f_index] = g_index
+			proteins_group[cluster, f_index] = g_index
 
 	#create annotation line for current frame
 	#----------------------------------------
@@ -1381,7 +1381,7 @@ def process_clusters(clusters, f_index, f_nb):
 			global vmd_cluster_group
 			tmp_group = str(frames_nb[f_index])
 			for p_index in range(0,proteins_nb):
-				tmp_group += "." + str(proteins_cluster_status_groups[p_index,f_index])
+				tmp_group += "." + str(proteins_group[p_index,f_index])
 			vmd_cluster_group += tmp_group + "\n"
 			if vmd_counter == args.buffer_size:
 				with open(output_xtc_annotate_cluster_group, 'a') as f:
@@ -1968,7 +1968,7 @@ def graph_interactions_proteins():
 		s = proteins_species[s_index]
 		tmp_nb = 0
 		for ss_index in range(0, s_index):
-			tmp_nb += proteins_species[ss_index]
+			tmp_nb += proteins_nb[proteins_species[ss_index]]
 		plt.vlines(tmp_nb, 0, nb_proteins, linestyles = 'dashed')
 		plt.hlines(tmp_nb, 0, nb_proteins, linestyles = 'dashed')
 	
@@ -2570,7 +2570,8 @@ def graph_aggregation_2D_sizes():
 	#create figure ('norm' requires at least 2 elements to work)
 	fig = plt.figure(figsize=(9, 8))
 	ax_plot = fig.add_axes([0.10, 0.1, 0.75, 0.77])	
-	ax_plot.matshow(proteins_size, origin = 'lower', interpolation = 'nearest', cmap = color_map, aspect = 'auto', norm = norm)
+	#ax_plot.pcolormesh(proteins_size.T, cmap = color_map, norm = norm)
+	ax_plot.matshow(proteins_size.T, origin = 'lower', interpolation = 'nearest', cmap = color_map, aspect = 'auto', norm = norm)
 
 	#create color bar
 	ax_cbar = fig.add_axes([0.88, 0.1, 0.025, 0.77])
@@ -2595,18 +2596,23 @@ def graph_aggregation_2D_sizes():
 	for t in cb.ax.get_yticklabels():
 		t.set_fontsize('xx-small')
 	
-	#format axes
-	for s_index in range(1, nb_species):
+	#label area of plots
+	for s_index in range(0, nb_species):
 		s = proteins_species[s_index]
 		tmp_nb = 0
 		for ss_index in range(0, s_index):
-			tmp_nb += proteins_species[ss_index]
-		plt.hlines(tmp_nb, 0, nb_proteins, linestyles = 'dashed')
+			tmp_nb += proteins_nb[proteins_species[ss_index]]
+		ax_plot.hlines(tmp_nb, 0, nb_frames_to_process, linestyles = 'dashed')
+		text = ax_plot.text(nb_frames_to_process/float(2), tmp_nb + proteins_nb[s]/float(2), str(proteins_names[s]), verticalalignment='center', horizontalalignment='center', fontsize=20)
+		text.set_alpha(0.3)
+
+	#format axes
 	ax_plot.xaxis.set_label_position('bottom') 
 	ax_plot.xaxis.set_ticks_position('bottom')
 	ax_plot.set_xlabel("time (ns)", fontsize = "medium")
 	plt.setp(ax_plot.xaxis.get_majorticklabels(), fontsize = "small" )
-	ax_plot.set_xlim(0,nb_frames_to_process-1) 
+	ax_plot.set_xlim(0,nb_frames_to_process) 
+	ax_plot.set_ylim(0, nb_proteins)	
 	ax_plot.xaxis.set_major_locator(MaxNLocator(nbins=5))
 	xlabel = ax_plot.get_xticks().tolist()
 	for tick_index in range(0,len(xlabel)):
@@ -2616,11 +2622,10 @@ def graph_aggregation_2D_sizes():
 		xlabel[tick_index] = int(frames_time[f_index])
 	ax_plot.set_xticklabels(xlabel)
 	ax_plot.yaxis.set_ticks_position('left')
-	ax_plot.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x,p: '{0:0g}'.format(x+1)))	#increase the index by 1 to get 1-based numbers
+	#ax_plot.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x,p: '{0:0g}'.format(x+1)))	#increase the index by 1 to get 1-based numbers
 	ax_plot.set_ylabel("protein #", fontsize = "medium")
 	ax_plot.yaxis.set_major_locator(MaxNLocator(prune = 'lower'))	
 	plt.setp(ax_plot.yaxis.get_majorticklabels(), fontsize = "small" )
-	
 	ax_plot.set_title("Evolution of the cluster size in which proteins are involved", fontsize = "medium")
 	ax_cbar.set_ylabel('cluster size', fontsize = 'small')
 	
@@ -2745,12 +2750,12 @@ def graph_xvg_groups():
 def graph_aggregation_2D_groups():
 	
 	#create filenames
-	filename_png=os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/2_1_plots_2D/png/2_1_clusterprot_2D.png'
-	filename_svg=os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/2_1_plots_2D/2_1_clusterprot_2D.svg'
+	filename_png=os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/5_1_plots_2D/png/5_1_clusterprot_2D.png'
+	filename_svg=os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/5_1_plots_2D/5_1_clusterprot_2D.svg'
 
 	#build color map
 	color_map = mcolors.LinearSegmentedColormap.from_list('custom', colours_groups_list, len(colours_groups_list))
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		colours_groups_list.insert(0, colour_leaflet_lower)				#interfacial proteins on the lower leaflet (prepend -> bottom of colour bar)
 		colours_groups_list.append(colour_leaflet_upper)				#interfacial proteins on the upper leaflet (append -> top of colour bar)
 		color_map.set_under(colour_leaflet_lower)
@@ -2759,7 +2764,7 @@ def graph_aggregation_2D_groups():
 	#determine nb of colours and their boundaries
 	bounds = []
 	cb_ticks_lab = []
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		cb_ticks_lab.append("lower")	
 	for g_index in sorted(colours_groups_dict.iterkeys()):
 		bounds.append(g_index-0.5)
@@ -2769,7 +2774,7 @@ def graph_aggregation_2D_groups():
 			cb_ticks_lab.append(">=" + str(groups_boundaries[g_index][0]))
 		else:
 			cb_ticks_lab.append(str(groups_boundaries[g_index][0]) + "-" + str(groups_boundaries[g_index][1]))
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		cb_ticks_lab.append("upper")
 	bounds.append(sorted(colours_groups_dict.iterkeys())[-1]+0.5)
 	norm = mpl.colors.BoundaryNorm(bounds, color_map.N)
@@ -2777,11 +2782,11 @@ def graph_aggregation_2D_groups():
 	#create figure ('norm' requires at least 2 elements to work)
 	fig = plt.figure(figsize=(9, 8))
 	ax_plot = fig.add_axes([0.10, 0.1, 0.75, 0.77])	
-	ax_plot.matshow(proteins_cluster_status_groups, origin = 'lower', interpolation = 'nearest', cmap = color_map, aspect = 'auto', norm = norm)
+	ax_plot.matshow(proteins_group.T, origin = 'lower', interpolation = 'nearest', cmap = color_map, aspect = 'auto', norm = norm)
 
 	#create color bar
 	ax_cbar=fig.add_axes([0.88, 0.1, 0.025, 0.77])
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		extend_val = "both"
 		boundaries_val = np.concatenate([[bounds[0]-1], bounds, [bounds[-1]+1]])
 	else:
@@ -2791,23 +2796,33 @@ def graph_aggregation_2D_groups():
 
 	#position and label color bar ticks
 	cb_ticks_pos = []
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		cb_ticks_pos.append(bounds[0])
 	for b in range(1,len(bounds)):
 		cb_ticks_pos.append(bounds[b-1]+(bounds[b]-bounds[b-1])/2)
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		cb_ticks_pos.append(bounds[-1])
 	cb.set_ticks(cb_ticks_pos)
 	cb.set_ticklabels(cb_ticks_lab)
 	for t in cb.ax.get_yticklabels():
 		t.set_fontsize('xx-small')
 				
+	#label area of plots
+	for s_index in range(0, nb_species):
+		s = proteins_species[s_index]
+		tmp_nb = 0
+		for ss_index in range(0, s_index):
+			tmp_nb += proteins_nb[proteins_species[ss_index]]
+		ax_plot.hlines(tmp_nb, 0, nb_frames_to_process, linestyles = 'dashed')
+		text = ax_plot.text(nb_frames_to_process/float(2), tmp_nb + proteins_nb[s]/float(2), str(proteins_names[s]), verticalalignment='center', horizontalalignment='center', fontsize=20)
+		text.set_alpha(0.3)
+
 	#format axes
 	ax_plot.xaxis.set_label_position('bottom') 
 	ax_plot.xaxis.set_ticks_position('bottom')
 	ax_plot.set_xlabel("time (ns)", fontsize = "medium")
 	plt.setp(ax_plot.xaxis.get_majorticklabels(), fontsize = "small" )
-	ax_plot.set_xlim(0,nb_frames_to_process-1) 
+	ax_plot.set_xlim(0,nb_frames_to_process) 
 	ax_plot.xaxis.set_major_locator(MaxNLocator(nbins=5))
 	xlabel = ax_plot.get_xticks().tolist()
 	for tick_index in range(0,len(xlabel)):
@@ -2815,8 +2830,7 @@ def graph_aggregation_2D_groups():
 		if f_index > nb_frames_to_process-1:
 			f_index = nb_frames_to_process-1
 		xlabel[tick_index] = int(frames_time[f_index])
-	ax_plot.set_xticklabels(xlabel)
-	
+	ax_plot.set_xticklabels(xlabel)	
 	ax_plot.yaxis.set_ticks_position('left')
 	ax_plot.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x,p: '{0:0g}'.format(x+1)))	#increase the index by 1 to get 1-based numbers
 	ax_plot.set_ylabel("protein #", fontsize = "medium")
@@ -3309,10 +3323,10 @@ else:
 		#graph_xvg_sizes_TM()
 		#write_xvg_sizes_interfacial()
 		#graph_xvg_sizes_interfacial()
-		#if args.cluster_groups_file != "no":
+		if args.cluster_groups_file != "no":
 			#write_xvg_groups()
 			#graph_xvg_groups()
-			#graph_aggregation_2D_groups()
+			graph_aggregation_2D_groups()
 	else:
 		print "\n"
 		print "Warning: a single cluster size (", str(cluster_sizes_sampled[0]), ") was detected throughout the trajectory, maybe check the cluster detection options (see clustering_prot -h)."
