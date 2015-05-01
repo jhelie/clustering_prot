@@ -1769,14 +1769,20 @@ def calculate_statistics():
 	proteins_nb_neighbours_avg_time_detail = np.zeros((nb_frames_to_process, nb_species, nb_species))
 	proteins_nb_neighbours_std_time_detail = np.zeros((nb_frames_to_process, nb_species, nb_species))
 	for s_index in range(0, nb_species):
-		proteins_nb_neighbours_avg_time_all[:, s_index] = np.average(np.sum(proteins_nb_neighbours[:, prot_index2sindex == s_index, :], axis = 1))
-		proteins_nb_neighbours_std_time_all[:, s_index] = np.std(np.sum(proteins_nb_neighbours[:, prot_index2sindex == s_index, :], axis = 1))
+		proteins_nb_neighbours_avg_time_all[:, s_index] = np.average(np.sum(proteins_nb_neighbours[:, prot_index2sindex == s_index, :], axis = 2), axis = 1)
+		proteins_nb_neighbours_std_time_all[:, s_index] = np.std(np.sum(proteins_nb_neighbours[:, prot_index2sindex == s_index, :], axis = 1), axis = 1)
 		for ss_index in range(0, nb_species):
 			proteins_nb_neighbours_avg_detail[s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
 			proteins_nb_neighbours_std_detail[s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
 			proteins_nb_neighbours_avg_time_detail[:, s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
 			proteins_nb_neighbours_std_time_detail[:, s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
-			
+	
+	#debug
+	print "avg all", proteins_nb_neighbours_avg_time_all
+	print "std all", proteins_nb_neighbours_std_time_all
+	print "avg", proteins_nb_neighbours_avg_time_detail
+	print "std", proteins_nb_neighbours_std_time_detail
+	
 	#composition of clusters
 	#-----------------------
 	#by size
@@ -1911,11 +1917,13 @@ def graph_proteins_neighbours():
 		fig.suptitle("Average number of neighbours per protein")
 		
 		#plot data
-		ax.set_ylim(0, 3)
+		#ax.set_ylim(0, 3)
 		for s_index in range(0, nb_species):
 			s = proteins_species[s_index]
 			plt.plot(frames_time, proteins_nb_neighbours_avg_time_all[:, s_index], color = proteins_colours[s], linewidth = 2.0, label = proteins_names[s])
-			plt.fill_between(frames_time, proteins_nb_neighbours_avg_time_all[:, s_index] - proteins_nb_neighbours_std_time_all[:, s_index], proteins_nb_neighbours_avg_time_all[:, s_index] + proteins_nb_neighbours_std_time_all[:, s_index], color = colours_lipids[s], edgecolor = colours_lipids[s], linewidth = 0, alpha = 0.2)
+			plt.plot(frames_time, proteins_nb_neighbours_avg_time_all[:, s_index]+proteins_nb_neighbours_std_time_all[:, s_index], color = proteins_colours[s], linewidth = 2.0, label = proteins_names[s])
+			plt.plot(frames_time, proteins_nb_neighbours_avg_time_all[:, s_index]-proteins_nb_neighbours_std_time_all[:, s_index], color = proteins_colours[s], linewidth = 2.0, label = proteins_names[s])
+			plt.fill_between(frames_time, proteins_nb_neighbours_avg_time_all[:, s_index] - proteins_nb_neighbours_std_time_all[:, s_index], proteins_nb_neighbours_avg_time_all[:, s_index] + proteins_nb_neighbours_std_time_all[:, s_index], color = proteins_colours[s], edgecolor = proteins_colours[s], linewidth = 0, alpha = 0.2)
 			
 		#format axes and legend
 		ax.spines['top'].set_visible(False)
