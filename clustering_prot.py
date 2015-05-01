@@ -1415,7 +1415,8 @@ def process_clusters(clusters, f_index, f_nb):
 def process_clusters_TM(network, f_index, box_dim, f_nb):
 
 	global vmd_cluster_size
-		
+	global proteins_ctcts_prot
+	
 	clusters = nx.connected_components(network)
 	nb_clusters = len(clusters)
 	c_counter = 0
@@ -1753,9 +1754,6 @@ def calculate_statistics():
 		for s_index2 in range(s_index1, nb_species):
 			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:				
 				proteins_ctcts_res[s_index1,s_index2] /= float(np.sum(proteins_ctcts_res[s_index1,s_index2]))
-				#divide values on diagonal by two in case of homo-interactions
-				if s_index2 == s_index1:
-					proteins_ctcts_res[s_index1,s_index2][np.arange(proteins_length[proteins_species[s_index1]]), np.arange(proteins_length[proteins_species[s_index2]])] /= float(2)
 
 	#neighbours of proteins
 	#----------------------
