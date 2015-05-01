@@ -174,7 +174,7 @@ The following python modules are needed :
     In case a colour map is used, its name must be specified as the colour for each lipid
     specie or size group.
 
-5. The script automatically detects proteins and, by default, groups them into species labelled
+6. The script automatically detects proteins and, by default, groups them into species labelled
    'A', 'B', etc... based on sequences. Oligomers, ie proteins made up of the repeat of a
    same sequence, are not detected by default and just considered as a protein with the overall
    sequence which can effectively decrease your sampling of contacts on heatmaps representing
@@ -210,7 +210,7 @@ Lipids identification (see note 2)
 
 Proteins properties
 -----------------------------------------------------
---species		: file defining name,multiplicity and sequence of protenis, see note 6
+--species		: file defining name,multiplicity and sequence of proteins, see note 6
 --groups		: cluster groups definition file, see note 4 [BETA]
 --res_contact	8	: cutoff to consider contacts between residues c.o.g (Angstrom)
 --res_show	0.1	: show all residues interactions accounting for at least that much contacts between proteins (%)
@@ -1964,9 +1964,13 @@ def graph_interactions_proteins():
 			else:
 				text = plt.text(tmp_offset_s + proteins_nb[s]/float(2), tmp_offset_ss + proteins_nb[ss]/float(2), str(proteins_names[s]) + "-" + str(proteins_names[ss]), verticalalignment='center', horizontalalignment='center', fontsize=20)
 			text.set_alpha(0.1)
-	for s in proteins_species:
-		plt.vlines(proteins_nb[s], 0, nb_proteins, linestyles = 'dashed')
-		plt.hlines(proteins_nb[s], 0, nb_proteins, linestyles = 'dashed')
+	for s_index in range(1, nb_species):
+		s = proteins_species[s_index]
+		tmp_nb = 0
+		for ss_index in range(0, s_index):
+			tmp_nb += proteins_species[ss_index]
+		plt.vlines(tmp_nb, 0, nb_proteins, linestyles = 'dashed')
+		plt.hlines(tmp_nb, 0, nb_proteins, linestyles = 'dashed')
 	
 	plt.xlabel('protein index', fontsize="small")
 	plt.ylabel('index of proteins interacted with', fontsize="small")
@@ -2592,6 +2596,12 @@ def graph_aggregation_2D_sizes():
 		t.set_fontsize('xx-small')
 	
 	#format axes
+	for s_index in range(1, nb_species):
+		s = proteins_species[s_index]
+		tmp_nb = 0
+		for ss_index in range(0, s_index):
+			tmp_nb += proteins_species[ss_index]
+		plt.hlines(tmp_nb, 0, nb_proteins, linestyles = 'dashed')
 	ax_plot.xaxis.set_label_position('bottom') 
 	ax_plot.xaxis.set_ticks_position('bottom')
 	ax_plot.set_xlabel("time (ns)", fontsize = "medium")
@@ -2605,7 +2615,6 @@ def graph_aggregation_2D_sizes():
 			f_index = nb_frames_to_process-1
 		xlabel[tick_index] = int(frames_time[f_index])
 	ax_plot.set_xticklabels(xlabel)
-	
 	ax_plot.yaxis.set_ticks_position('left')
 	ax_plot.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x,p: '{0:0g}'.format(x+1)))	#increase the index by 1 to get 1-based numbers
 	ax_plot.set_ylabel("protein #", fontsize = "medium")
