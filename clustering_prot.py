@@ -163,18 +163,10 @@ The following python modules are needed :
     Colours of individual cluster sizes use the matplotlib 'jet' colour scheme and cannot 
     be modified. 
 
-   (b) Cluster sizes colours
-    Colours of individual cluster sizes use the matplotlib 'jet' colour scheme and cannot 
-    be modified. You need to specify a size range via --colours_sizes on which to apply
-    the colour map (this is because the script does eveything in one pass and cannot guess
-    what the cluster sizes will be in advance).
-     -> '--colours_sizes 2,6'
-    
-    WARNING: cluster sizes outside the specified size range will use the same colours as
-    that associated to interfacial peptides!
-
-    Exact colour control can be achieved by using size groups (see note 4), so if you want
-    to control individual cluster sizes colours just specify the relevant group file.
+   (b) Colour of size groups
+	See note 4 above: exact colour control can be achieved for each size by using size
+	groups of unitary size, so if you want to control individual cluster sizes colours just
+	specify the relevant group file.
 
    (c) Colour definition
     Colours can be specified using single letter code (rgbcmykw), hex code  or the name of
@@ -222,7 +214,6 @@ Proteins properties
 --groups		: cluster groups definition file, see note 4 [BETA]
 --res_contact	8	: cutoff to consider contacts between residues c.o.g (Angstrom)
 --res_show	0.1	: show all residues interactions accounting for at least that much contacts between proteins (%)
---colours_sizes	1,9	: range of cluster sizes to colour, see note 5
 --algorithm	min	: 'cog','min' or 'density', see 'DESCRIPTION'
 --nx_cutoff 	8	: networkX cutoff distance for protein-protein contact (Angstrom)
 --db_radius 	20	: DBSCAN search radius (Angstrom)
@@ -255,7 +246,6 @@ parser.add_argument('--species', nargs=1, dest='species_file', default=['no'], h
 parser.add_argument('--groups', nargs=1, dest='cluster_groups_file', default=['no'], help=argparse.SUPPRESS)
 parser.add_argument('--res_contact', nargs=1, dest='res_contact', default=[8], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--res_show', nargs=1, dest='res_show', default=[0.1], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--colours_sizes', nargs=1, dest='colours_sizes', default=['1,9'], help=argparse.SUPPRESS)
 parser.add_argument('--algorithm', dest='m_algorithm', choices=['cog','min','density'], default='cog', help=argparse.SUPPRESS)
 parser.add_argument('--nx_cutoff', nargs=1, dest='cutoff_connect', default=[8], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--db_radius', nargs=1, dest='dbscan_dist', default=[20], type=float, help=argparse.SUPPRESS)
@@ -291,7 +281,6 @@ args.species_file = args.species_file[0]
 args.cluster_groups_file = args.cluster_groups_file[0]
 args.res_contact = args.res_contact[0]
 args.res_show = args.res_show[0]/float(100)
-args.colours_sizes = args.colours_sizes[0]
 args.cutoff_connect = args.cutoff_connect[0]
 args.dbscan_dist = args.dbscan_dist[0]
 args.dbscan_nb = args.dbscan_nb[0]
@@ -304,7 +293,6 @@ global vmd_counter
 global vmd_cluster_size
 global vmd_cluster_group
 global lipids_ff_nb
-global colours_sizes_range
 global colour_group_other
 global colour_leaflet_lower
 global colour_leaflet_upper
@@ -317,17 +305,6 @@ lipids_ff_nb = 0
 colour_group_other = "#E6E6E6"											#very light grey
 colour_leaflet_lower = "#808080"										#dark grey
 colour_leaflet_upper = "#C0C0C0"										#light grey
-
-#colour of cluster sizes
-tmp_col_size = args.colours_sizes.split(',')
-if len(tmp_col_size) != 2:
-	print "Error: wrong format for the option --colours_sizes, it should be 'min,max' (see clustering_prot --help, note 8)."
-	sys.exit(1)
-elif int(tmp_col_size[0]) > int(tmp_col_size[1]):
-	print "Error: wrong format for the option --colours_sizes, it should be 'min,max' (see clustering_prot --help, note 8)."
-	sys.exit(1)
-else:
-	colours_sizes_range = [int(tmp_col_size[0]), int(tmp_col_size[1])]
 	
 #leaflet identification
 if args.cutoff_leaflet != "large" and args.cutoff_leaflet != "no" and args.cutoff_leaflet != "optimise":
@@ -1368,7 +1345,7 @@ def process_clusters(clusters, f_index, f_nb):
 
 			#get size
 			c_size = np.size(cluster)
-			proteins_cluster_status_sizes[cluster, f_index] = c_size
+			proteins_size[cluster, f_index] = c_size
 
 	#case: store cluster size and group size
 	#---------------------------------------
@@ -1383,7 +1360,7 @@ def process_clusters(clusters, f_index, f_nb):
 			#get size and group
 			c_size = np.size(cluster)
 			g_index = groups_sizes_dict[c_size]
-			proteins_cluster_status_sizes[cluster, f_index] = c_size
+			proteins_size[cluster, f_index] = c_size
 			proteins_cluster_status_groups[cluster, f_index] = g_index
 
 	#create annotation line for current frame
@@ -1392,7 +1369,7 @@ def process_clusters(clusters, f_index, f_nb):
 		#size
 		tmp_size = str(frames_nb[f_index])
 		for p_index in range(0,proteins_nb):
-			tmp_size += "." + str(proteins_cluster_status_sizes[p_index,f_index])
+			tmp_size += "." + str(proteins_size[p_index,f_index])
 		vmd_cluster_size += tmp_size + "\n"
 		if vmd_counter == args.buffer_size:
 			with open(output_xtc_annotate_cluster_size, 'a') as f:
@@ -1577,16 +1554,20 @@ def get_sizes_sampled():
 		
 	global clusters_nb
 	global clusters_pc
+	global clusters_interfacial
 	global cluster_sizes_sampled
 	global cluster_sizes_sampled_TM
 	
 	#sizes
 	#-----
+	clusters_interfacial = False
 	cluster_sizes_sampled = np.unique(proteins_size)
 	cluster_sizes_sampled_TM = cluster_sizes_sampled[cluster_sizes_sampled != -1]	
 	cluster_sizes_sampled_TM = cluster_sizes_sampled_TM[cluster_sizes_sampled_TM != 99999]
 	cluster_sizes_sampled = sorted(cluster_sizes_sampled)	
 	cluster_sizes_sampled_TM = sorted(cluster_sizes_sampled_TM)
+	if len(cluster_sizes_sampled_TM) != len(cluster_sizes_sampled):
+		clusters_interfacial = True
 	clusters_nb = {c_size: np.zeros(nb_frames_to_process) for c_size in cluster_sizes_sampled + [-1,99999]}
 	clusters_pc = {c_size: np.zeros(nb_frames_to_process) for c_size in cluster_sizes_sampled + [-1,99999]}
 
@@ -1609,12 +1590,16 @@ def get_sizes_sampled():
 	return
 def update_color_dict():
 	global colours_sizes_nb
+	global colours_sizes_range
 	global colours_sizes_dict
 	global colours_sizes_list
 		
 	#colours: sizes (colours from jet colormap)
 	#-------
-	colours_sizes_nb = colours_sizes_range[1] - colours_sizes_range[0]+1
+	colours_sizes_range = np.zeros(2, int)
+	colours_sizes_range[0] = min(cluster_sizes_sampled_TM)
+	colours_sizes_range[1] = max(cluster_sizes_sampled_TM)
+	colours_sizes_nb = colours_sizes_range[1] - colours_sizes_range[0] + 1
 	colours_sizes_dict = {}
 	colours_sizes_list = []
 
@@ -2151,8 +2136,6 @@ def graph_clusters_comp():
 		
 	return
 
-
-
 #sizes
 def write_xvg_biggest():
 	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_3_biggest/xvg/1_3_clusterprot_biggest.txt'
@@ -2556,26 +2539,26 @@ def graph_aggregation_2D_sizes():
 	#organise it so that the species are displayed as horizontal layers
 
 	#create filenames
-	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_1_plots_2D/png/1_1_clusterprot_2D.png'
-	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_1_plots_2D/1_1_clusterprot_2D.svg'
+	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_1_plots_2D/png/4_1_clusterprot_2D.png'
+	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_1_plots_2D/4_1_clusterprot_2D.svg'
 
 	#build color map
 	color_map = mcolors.LinearSegmentedColormap.from_list('custom', colours_sizes_list, colours_sizes_nb)
 
 	#set colours for surfacic peptide
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		color_map.set_under(colour_leaflet_lower)
 		color_map.set_over(colour_leaflet_upper)
 	
 	#determine nb of colours and their boundaries
 	bounds = []
 	cb_ticks_lab = []
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		cb_ticks_lab.append("lower")
 	for c in range(colours_sizes_range[0],colours_sizes_range[1]+1):
 		bounds.append(c-0.5)
 		cb_ticks_lab.append(str(c))
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		cb_ticks_lab.append("upper")
 	bounds.append(colours_sizes_range[1]+0.5)	
 	norm = mpl.colors.BoundaryNorm(bounds, color_map.N)
@@ -2583,11 +2566,11 @@ def graph_aggregation_2D_sizes():
 	#create figure ('norm' requires at least 2 elements to work)
 	fig = plt.figure(figsize=(9, 8))
 	ax_plot = fig.add_axes([0.10, 0.1, 0.75, 0.77])	
-	ax_plot.matshow(proteins_cluster_status_sizes, origin = 'lower', interpolation = 'nearest', cmap = color_map, aspect = 'auto', norm = norm)
+	ax_plot.matshow(proteins_size, origin = 'lower', interpolation = 'nearest', cmap = color_map, aspect = 'auto', norm = norm)
 
 	#create color bar
 	ax_cbar = fig.add_axes([0.88, 0.1, 0.025, 0.77])
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		extend_val = "both"
 		boundaries_val = np.concatenate([[bounds[0]-1], bounds, [bounds[-1]+1]])
 	else:
@@ -2597,11 +2580,11 @@ def graph_aggregation_2D_sizes():
 	
 	#position and label color bar ticks
 	cb_ticks_pos = []
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		cb_ticks_pos.append(bounds[0])
 	for b in range(1,len(bounds)):
 		cb_ticks_pos.append(bounds[b-1]+(bounds[b]-bounds[b-1])/2)
-	if args.cutoff_leaflet != "no":
+	if args.cutoff_leaflet != "no" and clusters_interfacial:
 		cb_ticks_pos.append(bounds[-1])
 	cb.set_ticks(cb_ticks_pos)
 	cb.set_ticklabels(cb_ticks_lab)
@@ -3308,7 +3291,7 @@ else:
 			write_xtc_annotation("finish")
 		#to comment
 		print " -writing xvg and graphs..."
-		#graph_aggregation_2D_sizes()
+		graph_aggregation_2D_sizes()
 		#write_xvg_biggest()
 		#graph_xvg_biggest()
 		#write_xvg_mostrep()
