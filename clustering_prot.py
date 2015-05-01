@@ -2142,8 +2142,8 @@ def graph_clusters_comp():
 
 #sizes
 def write_xvg_biggest():
-	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_3_biggest/xvg/1_3_clusterprot_biggest.txt'
-	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_3_biggest/xvg/1_3_clusterprot_biggest.xvg'
+	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_3_biggest/xvg/4_3_clusterprot_biggest.txt'
+	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_3_biggest/xvg/4_3_clusterprot_biggest.xvg'
 	output_txt = open(filename_txt, 'w')
 	output_txt.write("@[peptides clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_txt.write("@Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_3_clusterprot_biggest.xvg.\n")
@@ -2166,13 +2166,13 @@ def write_xvg_biggest():
 	output_txt.write("1_2_clusterprot_biggest.xvg,3,nb,r\n")
 	output_txt.close()
 	for f_index in range(0,nb_frames_to_process):
-		results = str(frames_time[f_index]) + "	" + str(cluster_biggest_size[f_index]) + "	" + str(round(cluster_biggest_pc[f_index],2)) + "	" + str(cluster_biggest_nb[f_index])
+		results = str(frames_time[f_index]) + "	" + str(clusters_biggest['size'][f_index]) + "	" + str(round(clusters_biggest['pc'][f_index],2)) + "	" + str(clusters_biggest['nb'][f_index])
 		output_xvg.write(results + "\n")
 	output_xvg.close()
 	return
 def write_xvg_mostrep():
-	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_4_mostrep/xvg/1_4_clusterprot_mostrep.txt'
-	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_4_mostrep/xvg/1_4_clusterprot_mostrep.xvg'
+	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_4_mostrep/xvg/4_4_clusterprot_mostrep.txt'
+	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_4_mostrep/xvg/4_4_clusterprot_mostrep.xvg'
 	output_txt = open(filename_txt, 'w')
 	output_txt.write("@[peptides clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_txt.write("@Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_4_clusterprot_mostrep.xvg.\n")
@@ -2195,14 +2195,14 @@ def write_xvg_mostrep():
 	output_txt.write("1_2_clusterprot_mostrep.xvg,3,nb,r\n")
 	output_txt.close()
 	for f_index in range(0,nb_frames_to_process):
-		results = str(frames_time[f_index]) + "	" + str(cluster_mostrep_size[f_index]) + "	" + str(round(cluster_mostrep_pc[f_index],2)) + "	" + str(cluster_mostrep_nb[f_index])
+		results = str(frames_time[f_index]) + "	" + str(clusters_mostrep['size'][f_index]) + "	" + str(round(clusters_mostrep['pc'][f_index],2)) + "	" + str(clusters_mostrep['nb'][f_index])
 		output_xvg.write(results + "\n")
 	output_xvg.close()
 	return
 def write_xvg_sizes_TM():
 
-	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_TM.txt'
-	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_TM.xvg'
+	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_2_plots_1D/xvg/4_2_clusterprot_1D_TM.txt'
+	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_2_plots_1D/xvg/4_2_clusterprot_1D_TM.xvg'
 	output_txt = open(filename_txt, 'w')
 	output_txt.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_txt.write("# Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_2_clusterprot_1D_TM.xvg.\n")
@@ -2255,8 +2255,8 @@ def write_xvg_sizes_TM():
 	return
 def write_xvg_sizes_interfacial():
 
-	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_interfacial.txt'
-	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/xvg/1_2_clusterprot_1D_interfacial.xvg'
+	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_2_plots_1D/xvg/4_2_clusterprot_1D_interfacial.txt'
+	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_2_plots_1D/xvg/4_2_clusterprot_1D_interfacial.xvg'
 	output_txt = open(filename_txt, 'w')
 	output_txt.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_txt.write("# Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 1_2_clusterprot_1D_interfacial.xvg.\n")
@@ -2297,8 +2297,8 @@ def write_xvg_sizes_interfacial():
 def graph_xvg_biggest():
 	#create filenames
 	#----------------
-	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_3_biggest/png/1_3_clusterprot_biggest.png'
-	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_3_biggest/1_3_clusterprot_biggest.svg'
+	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_3_biggest/png/4_3_clusterprot_biggest.png'
+	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_3_biggest/4_3_clusterprot_biggest.svg'
 
 	#create figure
 	#-------------
@@ -2309,7 +2309,7 @@ def graph_xvg_biggest():
 	#------------
 	ax1 = fig.add_subplot(211)
 	p_upper = {}
-	p_upper["size"] = plt.plot(frames_time, cluster_biggest_size, color = 'k', linewidth = 2.0, label = "size")
+	p_upper["size"] = plt.plot(frames_time, clusters_biggest['size'], color = 'k', linewidth = 2.0, label = "size")
 	fontP.set_size("small")
 	ax1.legend(prop=fontP)
 	plt.xlabel('time (ns)', fontsize="small")
@@ -2319,8 +2319,8 @@ def graph_xvg_biggest():
 	#-------------
 	ax2 = fig.add_subplot(212)
 	p_lower = {}
-	p_lower["pc"] = plt.plot(frames_time, cluster_biggest_pc, color = 'c', linewidth = 2.0, label = "% of proteins")
-	#p_lower["nb"]=plt.plot(time_sorted, cluster_biggest_nb_sorted, color='r', linewidth=2.0, label="nb of clusters")
+	p_lower["pc"] = plt.plot(frames_time, clusters_biggest['pc'], color = 'c', linewidth = 2.0, label = "% of proteins")
+	#p_lower["nb"]=plt.plot(time_sorted, clusters_biggest['nb']_sorted, color='r', linewidth=2.0, label="nb of clusters")
 	fontP.set_size("small")
 	ax2.legend(prop=fontP)
 	plt.xlabel('time (ns)', fontsize="small")
@@ -2328,7 +2328,7 @@ def graph_xvg_biggest():
 
 	#save figure
 	#-----------
-	ax1.set_ylim(0, max(cluster_biggest_size)+2)
+	ax1.set_ylim(0, max(clusters_biggest['size'])+2)
 	ax2.set_ylim(0, 100)
 	ax1.spines['top'].set_visible(False)
 	ax1.spines['right'].set_visible(False)
@@ -2354,8 +2354,8 @@ def graph_xvg_biggest():
 def graph_xvg_mostrep():
 	#create filenames
 	#----------------
-	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_4_mostrep/png/1_4_clusterprot_mostrep.png'
-	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_4_mostrep/1_4_clusterprot_mostrep.svg'
+	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_4_mostrep/png/4_4_clusterprot_mostrep.png'
+	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_4_mostrep/4_4_clusterprot_mostrep.svg'
 
 	#create figure
 	#-------------
@@ -2366,7 +2366,7 @@ def graph_xvg_mostrep():
 	#------------
 	ax1 = fig.add_subplot(211)
 	p_upper = {}
-	p_upper["size"] = plt.plot(frames_time, cluster_mostrep_size, color = 'k', linewidth = 2.0, label = "size")
+	p_upper["size"] = plt.plot(frames_time, clusters_mostrep['size'], color = 'k', linewidth = 2.0, label = "size")
 	fontP.set_size("small")
 	ax1.legend(prop=fontP)
 	plt.xlabel('time (ns)', fontsize="small")
@@ -2376,8 +2376,8 @@ def graph_xvg_mostrep():
 	#-------------
 	ax2 = fig.add_subplot(212)
 	p_lower = {}
-	p_lower["pc"] = plt.plot(frames_time, cluster_mostrep_pc, color = 'c', linewidth = 2.0, label = "% of proteins")
-	#p_lower["nb"]=plt.plot(time_sorted, cluster_mostrep_nb_sorted, color='r', linewidth=2.0, label="nb of clusters")
+	p_lower["pc"] = plt.plot(frames_time, clusters_mostrep['pc'], color = 'c', linewidth = 2.0, label = "% of proteins")
+	#p_lower["nb"]=plt.plot(time_sorted, clusters_mostrep['nb']_sorted, color='r', linewidth=2.0, label="nb of clusters")
 	fontP.set_size("small")
 	ax2.legend(prop=fontP)
 	plt.xlabel('time (ns)', fontsize="small")
@@ -2385,7 +2385,7 @@ def graph_xvg_mostrep():
 
 	#save figure
 	#-----------
-	ax1.set_ylim(0, max(cluster_mostrep_size)+2)
+	ax1.set_ylim(0, max(clusters_mostrep['size'])+2)
 	ax2.set_ylim(0, 100)
 	ax1.spines['top'].set_visible(False)
 	ax1.spines['right'].set_visible(False)
@@ -2412,8 +2412,8 @@ def graph_xvg_sizes_TM():
 	
 	#create filenames
 	#----------------
-	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/png/1_2_clusterprot_1D_TM.png'
-	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/1_2_clusterprot_1D_TM.svg'
+	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_2_plots_1D/png/4_2_clusterprot_1D_TM.png'
+	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_2_plots_1D/4_2_clusterprot_1D_TM.svg'
 
 	#create figure
 	#-------------
@@ -2478,8 +2478,8 @@ def graph_xvg_sizes_interfacial():
 	
 	#create filenames
 	#----------------
-	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/png/1_2_clusterprot_1D_interfacial.png'
-	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/1_2_plots_1D/1_2_clusterprot_1D_interfacial.svg'
+	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_2_plots_1D/png/4_2_clusterprot_1D_interfacial.png'
+	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_2_plots_1D/4_2_clusterprot_1D_interfacial.svg'
 
 	#create figure
 	#-------------
@@ -2602,7 +2602,8 @@ def graph_aggregation_2D_sizes():
 		tmp_nb = 0
 		for ss_index in range(0, s_index):
 			tmp_nb += proteins_nb[proteins_species[ss_index]]
-		ax_plot.hlines(tmp_nb, 0, nb_frames_to_process, linestyles = 'dashed')
+		if s_index > 0:
+			ax_plot.hlines(tmp_nb, -0.5, nb_frames_to_process - 0.5, linestyles = 'dashed')
 		text = ax_plot.text(nb_frames_to_process/float(2), tmp_nb + proteins_nb[s]/float(2), str(proteins_names[s]), verticalalignment='center', horizontalalignment='center', fontsize=20)
 		text.set_alpha(0.3)
 
@@ -2611,8 +2612,7 @@ def graph_aggregation_2D_sizes():
 	ax_plot.xaxis.set_ticks_position('bottom')
 	ax_plot.set_xlabel("time (ns)", fontsize = "medium")
 	plt.setp(ax_plot.xaxis.get_majorticklabels(), fontsize = "small" )
-	ax_plot.set_xlim(0,nb_frames_to_process) 
-	ax_plot.set_ylim(0, nb_proteins)	
+	ax_plot.set_xlim(-0.5, nb_frames_to_process - 0.5)
 	ax_plot.xaxis.set_major_locator(MaxNLocator(nbins=5))
 	xlabel = ax_plot.get_xticks().tolist()
 	for tick_index in range(0,len(xlabel)):
@@ -2639,8 +2639,8 @@ def graph_aggregation_2D_sizes():
 #groups
 def write_xvg_groups():													
 
-	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/2_2_plots_1D/xvg/2_2_clusterprot_1D.txt'
-	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/2_2_plots_1D/xvg/2_2_clusterprot_1D.xvg'
+	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/5_2_plots_1D/xvg/5_2_clusterprot_1D.txt'
+	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/5_2_plots_1D/xvg/5_2_clusterprot_1D.xvg'
 	output_txt = open(filename_txt, 'w')
 	output_txt.write("@[peptides clustering statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_txt.write("@Use this file as the argument of the -c option of the script 'xvg_animate' in order to make a time lapse movie of the data in 2_2_clusterprot_1D.xvg.\n")
@@ -2689,8 +2689,8 @@ def graph_xvg_groups():
 	
 	#create filenames
 	#----------------
-	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/2_2_plots_1D/png/2_2_clusterprot_1D.png'
-	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/2_2_plots_1D/2_2_clusterprot_1D.svg'
+	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/5_2_plots_1D/png/5_2_clusterprot_1D.png'
+	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/5_2_plots_1D/5_2_clusterprot_1D.svg'
 
 	#create figure
 	#-------------
@@ -2813,7 +2813,8 @@ def graph_aggregation_2D_groups():
 		tmp_nb = 0
 		for ss_index in range(0, s_index):
 			tmp_nb += proteins_nb[proteins_species[ss_index]]
-		ax_plot.hlines(tmp_nb, 0, nb_frames_to_process, linestyles = 'dashed')
+		if s_index > 0:
+			ax_plot.hlines(tmp_nb, -0.5, nb_frames_to_process - 0.5 , linestyles = 'dashed')
 		text = ax_plot.text(nb_frames_to_process/float(2), tmp_nb + proteins_nb[s]/float(2), str(proteins_names[s]), verticalalignment='center', horizontalalignment='center', fontsize=20)
 		text.set_alpha(0.3)
 
@@ -2822,7 +2823,7 @@ def graph_aggregation_2D_groups():
 	ax_plot.xaxis.set_ticks_position('bottom')
 	ax_plot.set_xlabel("time (ns)", fontsize = "medium")
 	plt.setp(ax_plot.xaxis.get_majorticklabels(), fontsize = "small" )
-	ax_plot.set_xlim(0,nb_frames_to_process) 
+	ax_plot.set_xlim(-0.5, nb_frames_to_process - 0.5)
 	ax_plot.xaxis.set_major_locator(MaxNLocator(nbins=5))
 	xlabel = ax_plot.get_xticks().tolist()
 	for tick_index in range(0,len(xlabel)):
@@ -2832,7 +2833,7 @@ def graph_aggregation_2D_groups():
 		xlabel[tick_index] = int(frames_time[f_index])
 	ax_plot.set_xticklabels(xlabel)	
 	ax_plot.yaxis.set_ticks_position('left')
-	ax_plot.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x,p: '{0:0g}'.format(x+1)))	#increase the index by 1 to get 1-based numbers
+	#ax_plot.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x,p: '{0:0g}'.format(x+1)))	#increase the index by 1 to get 1-based numbers
 	ax_plot.set_ylabel("protein #", fontsize = "medium")
 	ax_plot.yaxis.set_major_locator(MaxNLocator(prune = 'lower'))	
 	plt.setp(ax_plot.yaxis.get_majorticklabels(), fontsize = "small" )
@@ -3315,17 +3316,18 @@ else:
 		#to comment
 		print " -writing xvg and graphs..."
 		graph_aggregation_2D_sizes()
-		#write_xvg_biggest()
-		#graph_xvg_biggest()
-		#write_xvg_mostrep()
-		#graph_xvg_mostrep()
-		#write_xvg_sizes_TM()
-		#graph_xvg_sizes_TM()
-		#write_xvg_sizes_interfacial()
-		#graph_xvg_sizes_interfacial()
+		write_xvg_biggest()
+		graph_xvg_biggest()
+		write_xvg_mostrep()
+		graph_xvg_mostrep()
+		write_xvg_sizes_TM()
+		graph_xvg_sizes_TM()
+		if clusters_interfacial:
+			write_xvg_sizes_interfacial()
+			graph_xvg_sizes_interfacial()
 		if args.cluster_groups_file != "no":
-			#write_xvg_groups()
-			#graph_xvg_groups()
+			write_xvg_groups()
+			graph_xvg_groups()
 			graph_aggregation_2D_groups()
 	else:
 		print "\n"
