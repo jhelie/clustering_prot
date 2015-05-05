@@ -448,6 +448,7 @@ else:
 	
 	#interactions and compositions
 	os.mkdir(args.output_folder + "/2_proteins_interactions")
+	os.mkdir(args.output_folder + "/2_proteins_interactions/xvg")
 	os.mkdir(args.output_folder + "/3_clusters_compositions")
 	
 	#cluster sizes
@@ -1917,6 +1918,110 @@ def graph_proteins_neighbours():
 		plt.close()
 
 	return
+def write_proteins_neighbours():
+
+	#case: gro file
+	#--------------
+	if args.xtcfilename == "no":
+
+		filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/3_clusters_compositions/3_clusters_compositions_by_sizes.stat'
+		output_stat = open(filename_stat, 'w')
+		output_stat.write("[Number of neighbours of proteins - written by clustering_prot v" + str(version_nb) +"]\n")
+		output_stat.write("\n")
+	
+		#average
+		tmp_title1 = "AVG	"
+		tmp_title2 = "--------"
+		tmp_title3 = "STD	"
+		for s_index in range(0, nb_species):
+			s_name = proteins_names[proteins_species[s_index]]
+			tmp_title1 += "	" + str(s_name)
+			tmp_title2 += "-------"		
+			tmp_title3 += "	" + str(s_name)
+		output_stat.write(tmp_title1 + "\n")
+		output_stat.write(tmp_title2 + "\n")
+		for ss_index in range(0, nb_species):
+			results = proteins_names[proteins_species[ss_index]]
+			for s_index in range(0, nb_species):
+				results += "	" + str(round(proteins_nb_neighbours_avg_detail[s_index, ss_index],2))
+			output_stat.write(results + "\n")
+		output_stat.write(tmp_title2 + "\n")
+		results = "total"
+		for s_index in range(0, nb_species):
+			results += "	" + str(round(np.sum(proteins_nb_neighbours_avg_detail[s_index, :]),2))
+		output_stat.write(results + "\n")
+		output_stat.write("\n")
+		
+		#std
+		output_stat.write(tmp_title3 + "\n")
+		output_stat.write(tmp_title2 + "\n")
+		for ss_index in range(0, nb_species):
+			results = proteins_names[proteins_species[ss_index]]
+			for s_index in range(0, nb_species):
+				results += "	" + str(round(proteins_nb_neighbours_std_detail[s_index, ss_index],2))
+			output_stat.write(results + "\n")
+		output_stat.write(results + "\n")
+
+
+	#case: xtc file
+	#--------------
+	else:
+		filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/xvg/2_proteins_neighbours.svg'
+		output_xvg = open(filename_xvg, 'w')
+		output_xvg.write("@ title \"Evolution of the number of neighbours of proteins\"\n")
+		output_xvg.write("@ xaxis  label \"time (ns)\"\n")
+		output_xvg.write("@ autoscale ONREAD xaxes\n")
+		output_xvg.write("@ TYPE XY\n")
+		output_xvg.write("@ view 0.15, 0.15, 0.95, 0.85\n")
+		output_xvg.write("@ legend on\n")
+		output_xvg.write("@ legend box on\n")
+		output_xvg.write("@ legend loctype view\n")
+		output_xvg.write("@ legend 0.98, 0.8\n")
+		output_xvg.write("@ legend length " + str((nb_species + 1) * nb_species * 2) + "\n")
+		#AVG
+		#total number of neighbours
+		for s_index in range(0, nb_species):
+			output_xvg.write("@ s" + str(s_index) + " legend \"" + str(proteins_names[proteins_species[s_index]]) + ": total (avg)\"\n")
+		#detail of number of neighbours for each specie
+		for s_index in range(0, nb_species):
+			s_name = proteins_names[proteins_species[s_index]]
+			for ss_index in range(0, nb_species):
+				output_xvg.write("@ s" + str((s_index + 1) * nb_species + ss_index) + " legend \"" + str(s_name) + ": " + str(proteins_names[proteins_species[ss_index]]) + " (avg)\"\n")
+		#STD
+		#total number of neighbours
+		for s_index in range(0, nb_species):
+			output_xvg.write("@ s" + str((nb_species + 1) * nb_species + s_index) + " legend \"" + str(proteins_names[proteins_species[s_index]]) + ": total (avg)\"\n")
+		#detail of number of neighbours for each specie
+		for s_index in range(0, nb_species):
+			s_name = proteins_names[proteins_species[s_index]]
+			for ss_index in range(0, nb_species):
+				output_xvg.write("@ s" + str((nb_species + 1) * nb_species + (s_index + 1) * nb_species + ss_index) + " legend \"" + str(s_name) + ": " + str(proteins_names[proteins_species[ss_index]]) + " (avg)\"\n")
+
+		#write data
+		for f_index in range(0,nb_frames_to_process):
+			results = str(frames_time[f_index])
+			#AVG
+			#total number of neighbours
+			for s_index in range(0, nb_species):
+				results += "	" + str(round(proteins_nb_neighbours_avg_time_all[f_index, s_index], 2))
+			#detail of number of neighbours for each specie
+			for s_index in range(0, nb_species):
+				s_name = proteins_names[proteins_species[s_index]]
+				for ss_index in range(0, nb_species):
+					results += "	" + str(round(proteins_nb_neighbours_avg_detail[f_index, s_index, ss_index], 2))
+			#STD
+			#total number of neighbours
+			for s_index in range(0, nb_species):
+				results += "	" + str(round(proteins_nb_neighbours_std_time_all[f_index, s_index], 2))
+			#detail of number of neighbours for each specie
+			for s_index in range(0, nb_species):
+				s_name = proteins_names[proteins_species[s_index]]
+				for ss_index in range(0, nb_species):
+					results += "	" + str(round(proteins_nb_neighbours_std_detail[f_index, s_index, ss_index], 2))
+			output_xvg.write(results + "\n")
+		output_xvg.close()
+	
+	return
 
 #interactions: proteins
 def graph_interactions_proteins():
@@ -2139,8 +2244,97 @@ def graph_clusters_comp():
 		plt.close()
 		
 	return
+def write_clusters_comp():
 
-#sizes
+	#by size
+	#=======
+	filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/3_clusters_compositions/3_clusters_compositions_by_sizes.stat'
+	output_stat = open(filename_stat, 'w')
+	output_stat.write("[Cluster composition statistics - written by clustering_prot v" + str(version_nb) +"]\n")
+	output_stat.write("\n")
+
+	#average
+	tmp_title1 = "AVG	"
+	tmp_title2 = "--------"
+	tmp_title3 = "STD	"
+	for c_index in range(0, len(cluster_sizes_sampled_TM)):
+		c_size = cluster_sizes_sampled_TM[c_index]
+		tmp_title1 += "	" + str(c_size)
+		tmp_title2 += "-------"		
+		tmp_title3 += "	" + str(c_size)
+	output_stat.write(tmp_title1 + "\n")
+	output_stat.write(tmp_title2 + "\n")
+	tmp_results = {s_index: proteins_names[proteins_species[s_index]] for s_index in range(0, nb_species)}
+	tmp_results["total"] = "total"
+	for c_index in range(0, len(cluster_sizes_sampled_TM)):
+		c_size = cluster_sizes_sampled_TM[c_index]
+		for s_index in range(0, nb_species):
+			tmp_results[s_index] += "	" + str(round(clusters_comp_avg[c_index, s_index],2))
+		tmp_results["total"] += "	" + str(round(np.sum(clusters_comp_avg[c_index, :]),2))
+	for s_index in range(0, nb_species):
+		output_stat.write(tmp_results[s_index] + "\n")
+	output_stat.write(tmp_title2 + "\n")
+	output_stat.write(tmp_results["total"] + "\n")
+	output_stat.write("\n")
+
+	#std dev
+	output_stat.write(tmp_title3 + "\n")
+	output_stat.write(tmp_title2 + "\n")
+	tmp_results = {s_index: proteins_names[proteins_species[s_index]] for s_index in range(0, nb_species)}
+	for c_index in range(0, len(cluster_sizes_sampled_TM)):
+		c_size = cluster_sizes_sampled_TM[c_index]
+		for s_index in range(0, nb_species):
+			tmp_results[s_index] += "	" + str(round(clusters_comp_std[c_index, s_index],2))
+	for s_index in range(0, nb_species):
+		output_stat.write(tmp_results[s_index] + "\n")
+	output_stat.write("\n")	
+	output_stat.close()
+	
+	#by groups
+	#=========
+	if args.cluster_groups_file != "no":
+		filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/3_clusters_compositions/3_clusters_compositions_by_groups.stat'
+		output_stat = open(filename_stat, 'w')
+		output_stat.write("[Cluster composition statistics - written by clustering_prot v" + str(version_nb) +"]\n")
+		output_stat.write("\n")
+	
+		#average
+		tmp_title1 = "AVG	"
+		tmp_title2 = "--------"
+		tmp_title3 = "STD	"
+		for g_index in range(0, groups_gmax):
+			tmp_title1 += "	" + str(groups_labels[g_index])
+			tmp_title2 += "-------"		
+			tmp_title3 += "	" + str(groups_labels[g_index])
+		output_stat.write(tmp_title1 + "\n")
+		output_stat.write(tmp_title2 + "\n")
+		tmp_results = {s_index: proteins_names[proteins_species[s_index]] for s_index in range(0, nb_species)}
+		tmp_results["total"] = "total"
+		for g_index in range(0, groups_gmax):
+			for s_index in range(0, nb_species):
+				tmp_results[s_index] += "	" + str(round(clusters_comp_avg_group[g_index, s_index],2))
+			tmp_results["total"] += "	" + str(round(np.sum(clusters_comp_avg_group[g_index, :]),2))
+		for s_index in range(0, nb_species):
+			output_stat.write(tmp_results[s_index] + "\n")
+		output_stat.write(tmp_title2 + "\n")
+		output_stat.write(tmp_results["total"] + "\n")
+		output_stat.write("\n")
+	
+		#std dev
+		output_stat.write(tmp_title3 + "\n")
+		output_stat.write(tmp_title2 + "\n")
+		tmp_results = {s_index: proteins_names[proteins_species[s_index]] for s_index in range(0, nb_species)}
+		for g_index in range(0, groups_gmax):
+			for s_index in range(0, nb_species):
+				tmp_results[s_index] += "	" + str(round(clusters_comp_std_group[g_index, s_index],2))
+		for s_index in range(0, nb_species):
+			output_stat.write(tmp_results[s_index] + "\n")
+		output_stat.write("\n")	
+		output_stat.close()
+
+	return
+
+#evolution clustering: sizes
 def write_xvg_biggest():
 	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_3_biggest/xvg/4_3_clusterprot_biggest.txt'
 	filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_3_biggest/xvg/4_3_clusterprot_biggest.xvg'
@@ -2632,7 +2826,7 @@ def graph_aggregation_2D_sizes():
 			
 	return
 
-#groups
+#evolution clustering: groups
 def write_xvg_groups():													
 
 	filename_txt = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/5_2_plots_1D/xvg/5_2_clusterprot_1D.txt'
@@ -3282,10 +3476,25 @@ print "\nWriting outputs..."
 
 if pres_oligomers:
 	process_oligomers()
+
+#proteins neighbours
 graph_proteins_neighbours()
+write_proteins_neighbours()	#to test: gro and xtc
+
+#proteins interactions
 graph_interactions_proteins()
+#write_interactions_proteins()	#to write: heatmap (array format to be read by np.loadtext())
+
+#data zip (xvg column style but with letters too)
+# - 1 file to summarise the protein each protein is in contact with -> allows to store number and type of neighbours
+# - 1 file to summarise the the cluster definition each protein he's in (e.g. A1B45A56) -> allows to store size and composition
+
+#residues interactions
 graph_interactions_residues()
+
+#cluster composition
 graph_clusters_comp()
+write_clusters_comp()		#to test
 
 #case: gro file
 #--------------
