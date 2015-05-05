@@ -2008,7 +2008,7 @@ def write_proteins_neighbours():
 			for s_index in range(0, nb_species):
 				s_name = proteins_names[proteins_species[s_index]]
 				for ss_index in range(0, nb_species):
-					results += "	" + str(round(proteins_nb_neighbours_avg_detail[f_index, s_index, ss_index], 2))
+					results += "	" + str(round(proteins_nb_neighbours_avg_time_detail[f_index, s_index, ss_index], 2))
 			#STD
 			#total number of neighbours
 			for s_index in range(0, nb_species):
@@ -2017,7 +2017,7 @@ def write_proteins_neighbours():
 			for s_index in range(0, nb_species):
 				s_name = proteins_names[proteins_species[s_index]]
 				for ss_index in range(0, nb_species):
-					results += "	" + str(round(proteins_nb_neighbours_std_detail[f_index, s_index, ss_index], 2))
+					results += "	" + str(round(proteins_nb_neighbours_std_time_detail[f_index, s_index, ss_index], 2))
 			output_xvg.write(results + "\n")
 		output_xvg.close()
 	
@@ -3479,7 +3479,7 @@ if pres_oligomers:
 
 #proteins neighbours
 graph_proteins_neighbours()
-write_proteins_neighbours()	#to test: gro and xtc
+write_proteins_neighbours()												#to test: gro and xtc
 
 #proteins interactions
 graph_interactions_proteins()
@@ -3494,7 +3494,7 @@ graph_interactions_residues()
 
 #cluster composition
 graph_clusters_comp()
-write_clusters_comp()		#to test
+write_clusters_comp()													#to test
 
 #case: gro file
 #--------------
