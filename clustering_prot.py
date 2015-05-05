@@ -2224,31 +2224,27 @@ def write_xvg_sizes_TM():
 	output_xvg.write("@ legend box on\n")
 	output_xvg.write("@ legend loctype view\n")
 	output_xvg.write("@ legend 0.98, 0.8\n")
-	output_xvg.write("@ legend length " + str(nb_proteins*2) + "\n")
+	output_xvg.write("@ legend length " + str(len(cluster_sizes_sampled_TM) * 2) + "\n")
 	#write caption: %
-	for c_index in range(0, nb_proteins):
-		c_size = c_index + 1
+	for c_index in range(0, len(cluster_sizes_sampled_TM)):
+		c_size = cluster_sizes_sampled_TM[c_index]
 		output_xvg.write("@ s" + str(c_index) + " legend \"% " + str(c_size) + "\"\n")
 		output_txt.write("1_2_clusterprot_1D.xvg," + str(c_index + 1) + ",% " + str(c_size) + "," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[c_size])) + "\n")
 	#write caption: nb
-	for c_index in range(0, nb_proteins):
-		c_size = c_index + 1
+	for c_index in range(0, len(cluster_sizes_sampled_TM)):
+		c_size = cluster_sizes_sampled_TM[c_index]
 		output_xvg.write("@ s" + str(nb_proteins + c_index) + " legend \"nb " + str(c_size) + "\"\n")
 		output_txt.write("1_2_clusterprot_1D.xvg," + str(nb_proteins + c_index + 1) + ",nb " + str(c_size) + "," + mcolors.rgb2hex(mcolorconv.to_rgb(colours_sizes_dict[c_size])) + "\n")
 	output_txt.close()
 	#write results
 	for f_index in range(0,nb_frames_to_process):
 		results = str(frames_time[f_index])
-		for c_size in range(1, nb_proteins + 1):
-			if c_size in cluster_sizes_sampled_TM:
-				results += "	" + str(round(clusters_pc[c_size][f_index],2))
-			else: 
-				results += "	0"		
-		for c_size in range(1, nb_proteins + 1):
-			if c_size in cluster_sizes_sampled_TM:
-				results += "	" + str(round(clusters_nb[c_size][f_index],2))
-			else: 
-				results += "	0"		
+		for c_index in range(0, len(cluster_sizes_sampled_TM)):
+			c_size = cluster_sizes_sampled_TM[c_index]
+			results += "	" + str(round(clusters_pc[c_size][f_index],2))
+		for c_index in range(0, len(cluster_sizes_sampled_TM)):
+			c_size = cluster_sizes_sampled_TM[c_index]
+			results += "	" + str(round(clusters_nb[c_size][f_index],2))
 		output_xvg.write(results + "\n")
 	output_xvg.close()
 	
