@@ -40,7 +40,7 @@ Detection of transmembrane protein clusters
 -------------------------------------------
 Two clustering algorithms can be used to identify protein clusters.
 ->Connectivity based (relies on networkX module):
-  A protein is considered in a cluster if it is within a distance less than --min_cutoff
+  A protein is considered in a cluster if it is within a distance less than --nx_cutoff
   from another protein. This means that a single protein can act as a connector between
   two otherwise disconnected protein clusters.
   This algorithm can be ran using either the minimum distante between proteins (default, 
@@ -189,13 +189,17 @@ The following python modules are needed :
    unit 'multiplicity' should be 1 and 'sequence' the complete protein sequence.
    1 letter code should be used for sequence.
 
-7. The 'cog' option for --algorithm should almost always be used to determine which proteins are
-   in contact with each other.
-   The --cog_cutoff option allows is mandatory and allow to control the distance between proteins
-   cogs for which the proteins are considered to be in contact. It can be set to a float value
-   (Angstrom) or used to specify a text file. This latter option is particularly useful if the
-   system contains several protein species of very different sizes. In this case a cutoff specific
-   to each type of interactions must be supplied in the txt file, with each line following the format:
+7  The --nx_cutoff option is mandatory and allows to control the distance for which proteins are
+   considered to be in contact.
+ 
+   In case the 'min' option for the --algorithm flag is specified, the --nx_cutoff flag should be
+   set to a float value (typically 6 or 8 Angstrom in CG).
+   
+   In case the 'cog' option for --algorithm is used (which should always be the case for rigid TM
+   proteins as it is MUCH faster) the --nx_cutoff can either be set to a float value (Angstrom) or
+   used to specify a text file. This latter option is particularly useful if the system contains
+   several protein species of very different sizes. In this case a cutoff specific to each type of
+   interactions must be supplied in the txt file, with each line following the format:
     -> 'specie1_index,specie2_index,cutoff_distance_between_cog1_and_cog2'
     
     where 'specie1_index' and 'specie2_index' correspond to 0-based indices referring to a specie of
@@ -236,8 +240,7 @@ Proteins properties
 --res_contact	8	: cutoff to consider contacts between residues c.o.g (Angstrom)
 --res_show	0.1	: show all residues interactions accounting for at least that much contacts between proteins (%)
 --algorithm	min	: 'cog','min' or 'density', see 'DESCRIPTION'
---min_cutoff 	8	: networkX cutoff distance for protein-protein contact (Angstrom), see note 7
---cog_cutoff 		: networkX cutoff distance for protein-protein contact (Angstrom or file), see note 7
+--nx_cutoff 		: networkX cutoff distance for protein-protein contact (Angstrom or file), see note 7
 --db_radius 	20	: DBSCAN search radius (Angstrom)
 --db_neighbours	3	: DBSCAN minimum number of neighbours within a circle of radius --db_radius	
  
@@ -269,8 +272,7 @@ parser.add_argument('--groups', nargs=1, dest='cluster_groups_file', default=['n
 parser.add_argument('--res_contact', nargs=1, dest='res_contact', default=[8], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--res_show', nargs=1, dest='res_show', default=[0.1], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--algorithm', dest='m_algorithm', choices=['cog','min','density'], default='cog', help=argparse.SUPPRESS)
-parser.add_argument('--min_cutoff', nargs=1, dest='min_cutoff', default=[8], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--cog_cutoff', nargs=1, dest='cog_cutoff', default=['no'], help=argparse.SUPPRESS)
+parser.add_argument('--nx_cutoff', nargs=1, dest='nx_cutoff', help=argparse.SUPPRESS, required=True)
 parser.add_argument('--db_radius', nargs=1, dest='dbscan_dist', default=[20], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--db_neighbours', nargs=1, dest='dbscan_nb', default=[3], type=int, help=argparse.SUPPRESS)
 
@@ -304,8 +306,7 @@ args.species_file = args.species_file[0]
 args.cluster_groups_file = args.cluster_groups_file[0]
 args.res_contact = args.res_contact[0]
 args.res_show = args.res_show[0]/float(100)
-args.min_cutoff = args.min_cutoff[0]
-args.cog_cutoff = args.cog_cutoff[0]
+args.nx_cutoff = args.nx_cutoff[0]
 args.dbscan_dist = args.dbscan_dist[0]
 args.dbscan_nb = args.dbscan_nb[0]
 #other options
@@ -320,14 +321,14 @@ global lipids_ff_nb
 global colour_group_other
 global colour_leaflet_lower
 global colour_leaflet_upper
-global cog_cutoff_file
+global nx_cutoff_file
 global cog_cutoff_values
 
 vmd_counter = 0
 vmd_cluster_size = ""
 vmd_cluster_group = ""
 lipids_ff_nb = 0
-cog_cutoff_file = False
+nx_cutoff_file = False
 cog_cutoff_values = {}
 
 colour_group_other = "#E6E6E6"											#very light grey
@@ -438,59 +439,55 @@ elif not os.path.isfile(args.xtcfilename):
 	sys.exit(1)
 
 if args.m_algorithm == "cog":
-	if args.cog_cutoff == "no":
-		print "Error: you need to specify --cog_cutoff if --algorithm is set to 'cog', see note 7."
-		sys.exit(1)
-	else:
-		try:
-			args.cog_cutoff	= float(args.cog_cutoff)
-		except:
-			if not os.path.isfile(args.cog_cutoff):
-				print "Error: the --cog_cutoff should either be a float or a text file, see note 7."
-				sys.exit(1)
-			else:
-				print "\nReading cog cutoffs definition file..."
-				cog_cutoff_file = True
-				s_indices = []
-				with open(args.cog_cutoff) as f:
-					lines = f.readlines()
-				for l_index in range(0, len(lines)):
-					#get line content
-					line = lines[l_index]
-					if line[-1] == "\n":
-						line = line[:-1]
-					l_content = line.split(',')
-					
-					#check line format
-					if len(l_content) != 3:
-						print "Error: the format of line " + str(l_index+1) + " is incorrect, see clustering_prot --help, note 7."
-						print "->", line
-						sys.exit(1)
-					else:
-						#store cutoffs 
-						s1_index = int(l_content[0])
-						s2_index = int(l_content[1])
-						s1s2_cutoff = float(l_content[2])
-						cog_cutoff_values[s1_index, s2_index] = s1s2_cutoff
-						cog_cutoff_values[s2_index, s1_index] = s1s2_cutoff
-	
-						#store list of indices
-						s_indices.append(s1_index)
-						s_indices.append(s2_index)
+	try:
+		args.nx_cutoff	= float(args.nx_cutoff)
+	except:
+		if not os.path.isfile(args.nx_cutoff):
+			print "Error: the --nx_cutoff should either be a float or a text file, see note 7."
+			sys.exit(1)
+		else:
+			print "\nReading cog cutoffs definition file..."
+			nx_cutoff_file = True
+			s_indices = []
+			with open(args.nx_cutoff) as f:
+				lines = f.readlines()
+			for l_index in range(0, len(lines)):
+				#get line content
+				line = lines[l_index]
+				if line[-1] == "\n":
+					line = line[:-1]
+				l_content = line.split(',')
 				
-				#check there's no gap
-				s_indices_unique = np.unique(s_indices)
-				if min(s_indices_unique) != 0:
-					print "Error: species indexing should start at 0."
+				#check line format
+				if len(l_content) != 3:
+					print "Error: the format of line " + str(l_index+1) + " is incorrect, see clustering_prot --help, note 7."
+					print "->", line
 					sys.exit(1)
-				if max(s_indices_unique) >= len(s_indices_unique):
-					print "Error: cutoff not specified for all species."
-					sys.exit(1)
-				for s_index in range(0, len(s_indices_unique)):
-					for ss_index in range(0, len(s_indices_unique)):
-						if (s_index, ss_index) not in cog_cutoff_values.keys():
-							print "Error: cutoff not specified for all species."
-							sys.exit(1)
+				else:
+					#store cutoffs 
+					s1_index = int(l_content[0])
+					s2_index = int(l_content[1])
+					s1s2_cutoff = float(l_content[2])
+					cog_cutoff_values[s1_index, s2_index] = s1s2_cutoff
+					cog_cutoff_values[s2_index, s1_index] = s1s2_cutoff
+
+					#store list of indices
+					s_indices.append(s1_index)
+					s_indices.append(s2_index)
+			
+			#check there's no gap
+			s_indices_unique = np.unique(s_indices)
+			if min(s_indices_unique) != 0:
+				print "Error: species indexing should start at 0."
+				sys.exit(1)
+			if max(s_indices_unique) >= len(s_indices_unique):
+				print "Error: cutoff not specified for all species."
+				sys.exit(1)
+			for s_index in range(0, len(s_indices_unique)):
+				for ss_index in range(0, len(s_indices_unique)):
+					if (s_index, ss_index) not in cog_cutoff_values.keys():
+						print "Error: cutoff not specified for all species."
+						sys.exit(1)
 					
 if args.m_algorithm != "density":
 	if '--db_radius' in sys.argv:
@@ -500,8 +497,8 @@ if args.m_algorithm != "density":
 		print "Error: --db_neighbours option specified but --algorithm option set to '" + str(args.m_algorithm) + "'."
 		sys.exit(1)
 else:
-	if '--min_cutoff' in sys.argv:
-		print "Error: --min_cutoff option specified but --algorithm option set to 'density'."
+	if '--nx_cutoff' in sys.argv:
+		print "Error: --nx_cutoff option specified but --algorithm option set to 'density'."
 		sys.exit(1)
 
 #=========================================================================================
@@ -881,6 +878,7 @@ def identify_proteins():
 	global proteins_colours
 	global proteins_species
 	global proteins_residues
+	global proteins_boundaries
 	global proteins_multiplicity
 	global proteins_sele_string_VMD	
 	global pres_oligomers
@@ -892,6 +890,7 @@ def identify_proteins():
 	proteins_colours = {}
 	proteins_species = []
 	proteins_residues = {}
+	proteins_boundaries = {}
 	proteins_multiplicity = {}
 	proteins_sele_string_VMD = {}
 	pres_oligomers = False
@@ -1006,7 +1005,7 @@ def identify_proteins():
 				proteins_multiplicity[s] = int(proteins_db_multiplicity[name])
 		if proteins_multiplicity[s] > 1:
 			pres_oligomers = True
-	
+			
 	#display results
 	#================
 	global nb_species, nb_proteins
@@ -1016,6 +1015,19 @@ def identify_proteins():
 	print " -found", nb_species, "species"
 	for s in proteins_species:
 		print "   " + str(proteins_names[s]) + ": " + str(proteins_nb[s])
+	if nx_cutoff_file:
+		if nb_species > np.sqrt(len(cog_cutoff_values.keys())):
+			print " Error: cutoff values not specified for some possible pair of species."
+			sys.exit(1)
+		if nb_species == 1:
+			print " -warning: different cutoff values specified but only 1 specie of protein found."
+			args.nx_cutoff_file = cog_cutoff_values[0,0]
+		if nb_species < np.sqrt(len(cog_cutoff_values.keys())):
+			print " -warning: more cutoff values specified than possible pair of species."
+		print " -the following contact cutoffs will be used (in Angstrom):"
+		for s_index in range(0, nb_proteins):
+			for ss_index in range(0, nb_proteins):
+				print "   " + proteins_names[proteins_species[s_index]] + "-" + proteins_names[proteins_species[ss_index]] + ": " + str(cog_cutoff_values[s_index, ss_index])
 
 	#create dictionaries
 	#===================
@@ -1034,6 +1046,7 @@ def identify_proteins():
 			prot_index2specie[p_index] = proteins_species[s_index]
 		prot_index2rel[p_start:p_end] -= p_start
 		prot_index2sindex[p_start:p_end] = s_index
+		proteins_boundaries[proteins_species[s_index]] = [int(p_start), int(p_end)]
 		
 	return
 def identify_leaflets():
@@ -1391,16 +1404,31 @@ def detect_clusters_connectivity(dist, box_dim):
 	#use networkx algorithm
 	
 	#different cutoff for different species
-	if args.
+	#--------------------------------------
+	if nx_cutoff_file and nb_species > 1:
+		#get constituting connection matrices
+		d = {}
 		for s_index in range(0, nb_species):
-			s_start = 
-			s_end = 
 			for ss_index in range(0, nb_species):
-				d[s_index, ss_index] = dist[s_start:s_end, ss_start:ss_end] < cutoff_values[s_index, ss_index]
-	
+				d[s_index, ss_index] = dist[proteins_boundaries[proteins_species[s_index]][0]:proteins_boundaries[proteins_species[s_index]][1], proteins_boundaries[proteins_species[s_index]][0]:proteins_boundaries[proteins_species[s_index]][1]] < cog_cutoff_values[s_index, ss_index]
+
+		#concatenate horizontally
+		tmp_connected = {}
+		for s_index in range(0, nb_species):
+			tmp_connected[s_index] = d[s_index,0]
+			for ss_index in range(1, nb_species):
+				tmp_connected[s_index] = np.concatenate((tmp_connected, d[s_index, ss_index]), axis = 1)
+		
+		#then concatenate the lines vertically
+		connected = tmp_connected[0]
+		for s_index in range(1, nb_species):
+			connected = np.concatenate((connected, tmp_connected[s_index]), axis = 0)
+
 	#same cutoff for everyone:
+	#-------------------------
 	else:
-		connected = (dist < args.min_cutoff)
+		connected = (dist < args.nx_cutoff)
+	
 	network = nx.Graph(connected)
 	
 	return network
@@ -1921,10 +1949,10 @@ def write_warning():
 	output_stat.write("2. Cluster detection Method:\n")
 	if args.m_algorithm=="min":
 		output_stat.write(" - connectivity based (min distances)\n")
-		output_stat.write(" - contact cutoff = " + str(args.min_cutoff) + " Angstrom\n")
+		output_stat.write(" - contact cutoff = " + str(args.nx_cutoff) + " Angstrom\n")
 	elif args.m_algorithm=="cog":
 		output_stat.write(" - connectivity based (cog distances)\n")
-		output_stat.write(" - contact cutoff = " + str(args.min_cutoff) + " Angstrom\n")
+		output_stat.write(" - contact cutoff = " + str(args.nx_cutoff) + " Angstrom\n")
 	else:
 		output_stat.write(" - density based (DBSCAN)\n")
 		output_stat.write(" - search radius = " + str(args.dbscan_dist) + " Angstrom, nb of neighbours = " + str(args.dbscan_nb) + "\n")
@@ -2573,7 +2601,7 @@ def write_xvg_sizes_TM():
 		output_xvg.write("# - search radius: " + str(args.dbscan_dist) + "\n")
 		output_xvg.write("# - nb of neighbours: " + str(args.dbscan_nb) + "\n")
 	else:
-		output_xvg.write("# - cutoff for contact: " + str(args.min_cutoff) + "\n")
+		output_xvg.write("# - cutoff for contact: " + str(args.nx_cutoff) + "\n")
 	output_xvg.write("@ title \"Evolution of protein aggregation\"\n")
 	output_xvg.write("@ xaxis  label \"time (ns)\"\n")
 	output_xvg.write("@ autoscale ONREAD xaxes\n")
@@ -2623,7 +2651,7 @@ def write_xvg_sizes_interfacial():
 		output_xvg.write("# - search radius: " + str(args.dbscan_dist) + "\n")
 		output_xvg.write("# - nb of neighbours: " + str(args.dbscan_nb) + "\n")
 	else:
-		output_xvg.write("# - cutoff for contact: " + str(args.min_cutoff) + "\n")
+		output_xvg.write("# - cutoff for contact: " + str(args.nx_cutoff) + "\n")
 	output_xvg.write("@ title \"Evolution of the number of interfacial proteins\"\n")
 	output_xvg.write("@ xaxis  label \"time (ns)\"\n")
 	output_xvg.write("@ autoscale ONREAD xaxes\n")
@@ -3007,7 +3035,7 @@ def write_xvg_groups():
 		output_xvg.write("# - search radius: " + str(args.dbscan_dist) + "\n")
 		output_xvg.write("# - nb of neighbours: " + str(args.dbscan_nb) + "\n")
 	else:
-		output_xvg.write("# - cutoff for contact: " + str(args.min_cutoff) + "\n")
+		output_xvg.write("# - cutoff for contact: " + str(args.nx_cutoff) + "\n")
 	output_xvg.write("@ title \"Evolution of protein aggregation\"\n")
 	output_xvg.write("@ xaxis  label \"time (ns)\"\n")
 	output_xvg.write("@ autoscale ONREAD xaxes\n")
@@ -3225,10 +3253,10 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 		output_stat.write("2. cluster detection Method:\n")
 		if args.m_algorithm == "min":
 			output_stat.write(" - connectivity based (min distances)\n")
-			output_stat.write(" - contact cutoff = " + str(args.min_cutoff) + " Angstrom\n")
+			output_stat.write(" - contact cutoff = " + str(args.nx_cutoff) + " Angstrom\n")
 		elif args.m_algorithm == "cog":
 			output_stat.write(" - connectivity based (cog distances)\n")
-			output_stat.write(" - contact cutoff = " + str(args.min_cutoff) + " Angstrom\n")
+			output_stat.write(" - contact cutoff = " + str(args.nx_cutoff) + " Angstrom\n")
 		else:
 			output_stat.write(" - density based (DBSCAN)\n")
 			output_stat.write(" - search radius = " + str(args.dbscan_dist) + " Angstrom, nb of neighbours = " + str(args.dbscan_nb) + "\n")
@@ -3264,10 +3292,10 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 			output_stat.write("2. cluster detection Method:\n")
 			if args.m_algorithm=="min":
 				output_stat.write(" - connectivity based (min distances)\n")
-				output_stat.write(" - contact cutoff = " + str(args.min_cutoff) + " Angstrom\n")
+				output_stat.write(" - contact cutoff = " + str(args.nx_cutoff) + " Angstrom\n")
 			elif args.m_algorithm=="cog":
 				output_stat.write(" - connectivity based (cog distances)\n")
-				output_stat.write(" - contact cutoff = " + str(args.min_cutoff) + " Angstrom\n")
+				output_stat.write(" - contact cutoff = " + str(args.nx_cutoff) + " Angstrom\n")
 			else:
 				output_stat.write(" - density based (DBSCAN)\n")
 				output_stat.write(" - search radius = " + str(args.dbscan_dist) + " Angstrom, nb of neighbours = " + str(args.dbscan_nb) + "\n")
@@ -3310,10 +3338,10 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 		output_stat.write("2. cluster detection Method:\n")
 		if args.m_algorithm == "min":
 			output_stat.write(" - connectivity based (min distances)\n")
-			output_stat.write(" - contact cutoff = " + str(args.min_cutoff) + " Angstrom\n")
+			output_stat.write(" - contact cutoff = " + str(args.nx_cutoff) + " Angstrom\n")
 		elif args.m_algorithm == "cog":
 			output_stat.write(" - connectivity based (cog distances)\n")
-			output_stat.write(" - contact cutoff = " + str(args.min_cutoff) + " Angstrom\n")
+			output_stat.write(" - contact cutoff = " + str(args.nx_cutoff) + " Angstrom\n")
 		else:
 			output_stat.write(" - density based (DBSCAN)\n")
 			output_stat.write(" - search radius = " + str(args.dbscan_dist) + " Angstrom, nb of neighbours = " + str(args.dbscan_nb) + "\n")
@@ -3355,10 +3383,10 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 			output_stat.write("2. cluster detection Method:\n")
 			if args.m_algorithm == "min":
 				output_stat.write(" - connectivity based (min distances)\n")
-				output_stat.write(" - contact cutoff = " + str(args.min_cutoff) + " Angstrom\n")
+				output_stat.write(" - contact cutoff = " + str(args.nx_cutoff) + " Angstrom\n")
 			elif args.m_algorithm == "cog":
 				output_stat.write(" - connectivity based (cog distances)\n")
-				output_stat.write(" - contact cutoff = " + str(args.min_cutoff) + " Angstrom\n")
+				output_stat.write(" - contact cutoff = " + str(args.nx_cutoff) + " Angstrom\n")
 			else:
 				output_stat.write(" - density based (DBSCAN)\n")
 				output_stat.write(" - search radius = " + str(args.dbscan_dist) + " Angstrom, nb of neighbours = " + str(args.dbscan_nb) + "\n")
