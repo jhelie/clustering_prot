@@ -1758,6 +1758,7 @@ def calculate_statistics():
 		for ss_index in range(0, nb_species):
 			proteins_nb_neighbours_avg_detail[s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
 			proteins_nb_neighbours_std_detail[s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index])
+			#average number of contacts
 			proteins_nb_neighbours_avg_time_detail[:, s_index, ss_index] = np.average(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
 			proteins_nb_neighbours_std_time_detail[:, s_index, ss_index] = np.std(proteins_nb_neighbours[:, prot_index2sindex == s_index, ss_index], axis = 1)
 		
@@ -1966,7 +1967,7 @@ def write_proteins_neighbours():
 	#case: xtc file
 	#--------------
 	else:
-		filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/xvg/2_proteins_neighbours.svg'
+		filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/xvg/2_proteins_neighbours.xvg'
 		output_xvg = open(filename_xvg, 'w')
 		output_xvg.write("@ title \"Evolution of the number of neighbours of proteins\"\n")
 		output_xvg.write("@ xaxis  label \"time (ns)\"\n")
@@ -1990,12 +1991,12 @@ def write_proteins_neighbours():
 		#STD
 		#total number of neighbours
 		for s_index in range(0, nb_species):
-			output_xvg.write("@ s" + str((nb_species + 1) * nb_species + s_index) + " legend \"" + str(proteins_names[proteins_species[s_index]]) + ": total (avg)\"\n")
+			output_xvg.write("@ s" + str((nb_species + 1) * nb_species + s_index) + " legend \"" + str(proteins_names[proteins_species[s_index]]) + ": total (std)\"\n")
 		#detail of number of neighbours for each specie
 		for s_index in range(0, nb_species):
 			s_name = proteins_names[proteins_species[s_index]]
 			for ss_index in range(0, nb_species):
-				output_xvg.write("@ s" + str((nb_species + 1) * nb_species + (s_index + 1) * nb_species + ss_index) + " legend \"" + str(s_name) + ": " + str(proteins_names[proteins_species[ss_index]]) + " (avg)\"\n")
+				output_xvg.write("@ s" + str((nb_species + 1) * nb_species + (s_index + 1) * nb_species + ss_index) + " legend \"" + str(s_name) + ": " + str(proteins_names[proteins_species[ss_index]]) + " (std)\"\n")
 
 		#write data
 		for f_index in range(0,nb_frames_to_process):
@@ -2253,17 +2254,41 @@ def write_clusters_comp():
 	output_stat.write("[Cluster composition statistics - written by clustering_prot v" + str(version_nb) +"]\n")
 	output_stat.write("\n")
 
-	#average
-	tmp_title1 = "AVG	"
-	tmp_title2 = "--------"
-	tmp_title3 = "STD	"
+	#sampling
+	output_stat.write("sampling:\n")
+	output_stat.write("*********\n")
+	output_stat.write("\n")
+	tmp_title1 = ""
+	tmp_title2a = "====="
 	for c_index in range(0, len(cluster_sizes_sampled_TM)):
 		c_size = cluster_sizes_sampled_TM[c_index]
 		tmp_title1 += "	" + str(c_size)
-		tmp_title2 += "-------"		
+		tmp_title2a += "========"
+	output_stat.write(tmp_title1 + "\n")
+	output_stat.write(tmp_title2a + "\n")
+	results = "nb"
+	for c_index in range(0, len(cluster_sizes_sampled_TM)):
+		c_size = cluster_sizes_sampled_TM[c_index]
+		results += "	" + str(round(np.sum(clusters_nb[c_size]),2))
+	output_stat.write("\n")
+	output_stat.write("\n")
+
+	#average
+	output_stat.write("composition:\n")
+	output_stat.write("************\n")
+	output_stat.write("\n")
+	tmp_title1 = "avg"
+	tmp_title2a = "====="
+	tmp_title2b = "-----"
+	tmp_title3 = "std"
+	for c_index in range(0, len(cluster_sizes_sampled_TM)):
+		c_size = cluster_sizes_sampled_TM[c_index]
+		tmp_title1 += "	" + str(c_size)
+		tmp_title2a += "========"
+		tmp_title2b += "--------"
 		tmp_title3 += "	" + str(c_size)
 	output_stat.write(tmp_title1 + "\n")
-	output_stat.write(tmp_title2 + "\n")
+	output_stat.write(tmp_title2a + "\n")
 	tmp_results = {s_index: proteins_names[proteins_species[s_index]] for s_index in range(0, nb_species)}
 	tmp_results["total"] = "total"
 	for c_index in range(0, len(cluster_sizes_sampled_TM)):
@@ -2273,13 +2298,14 @@ def write_clusters_comp():
 		tmp_results["total"] += "	" + str(round(np.sum(clusters_comp_avg[c_index, :]),2))
 	for s_index in range(0, nb_species):
 		output_stat.write(tmp_results[s_index] + "\n")
-	output_stat.write(tmp_title2 + "\n")
+	output_stat.write(tmp_title2b + "\n")
 	output_stat.write(tmp_results["total"] + "\n")
 	output_stat.write("\n")
 
 	#std dev
+	output_stat.write("\n")
 	output_stat.write(tmp_title3 + "\n")
-	output_stat.write(tmp_title2 + "\n")
+	output_stat.write(tmp_title2a + "\n")
 	tmp_results = {s_index: proteins_names[proteins_species[s_index]] for s_index in range(0, nb_species)}
 	for c_index in range(0, len(cluster_sizes_sampled_TM)):
 		c_size = cluster_sizes_sampled_TM[c_index]
@@ -2298,16 +2324,37 @@ def write_clusters_comp():
 		output_stat.write("[Cluster composition statistics - written by clustering_prot v" + str(version_nb) +"]\n")
 		output_stat.write("\n")
 	
-		#average
-		tmp_title1 = "AVG	"
-		tmp_title2 = "--------"
-		tmp_title3 = "STD	"
+		#sampling
+		output_stat.write("sampling:\n")
+		output_stat.write("*********\n")
+		output_stat.write("\n")
+		tmp_title1 = ""
+		tmp_title2a = "====="
 		for g_index in range(0, groups_gmax):
 			tmp_title1 += "	" + str(groups_labels[g_index])
-			tmp_title2 += "-------"		
+			tmp_title2a += "========"
+		output_stat.write(tmp_title1 + "\n")
+		output_stat.write(tmp_title2a + "\n")
+		results = "nb"
+		for g_index in range(0, groups_gmax):
+			results += "	" + str(round(np.sum(clusters_nb_group[g_index]),2))
+		output_stat.write("\n")
+		output_stat.write("\n")
+	
+		#average
+		output_stat.write("composition:\n")
+		output_stat.write("************\n")
+		tmp_title1 = "avg"
+		tmp_title2a = "====="
+		tmp_title2b = "-----"
+		tmp_title3 = "std"
+		for g_index in range(0, groups_gmax):
+			tmp_title1 += "	" + str(groups_labels[g_index])
+			tmp_title2a += "========"
+			tmp_title2b += "--------"
 			tmp_title3 += "	" + str(groups_labels[g_index])
 		output_stat.write(tmp_title1 + "\n")
-		output_stat.write(tmp_title2 + "\n")
+		output_stat.write(tmp_title2a + "\n")
 		tmp_results = {s_index: proteins_names[proteins_species[s_index]] for s_index in range(0, nb_species)}
 		tmp_results["total"] = "total"
 		for g_index in range(0, groups_gmax):
@@ -2316,13 +2363,14 @@ def write_clusters_comp():
 			tmp_results["total"] += "	" + str(round(np.sum(clusters_comp_avg_group[g_index, :]),2))
 		for s_index in range(0, nb_species):
 			output_stat.write(tmp_results[s_index] + "\n")
-		output_stat.write(tmp_title2 + "\n")
+		output_stat.write(tmp_title2b + "\n")
 		output_stat.write(tmp_results["total"] + "\n")
 		output_stat.write("\n")
 	
 		#std dev
+		output_stat.write("\n")
 		output_stat.write(tmp_title3 + "\n")
-		output_stat.write(tmp_title2 + "\n")
+		output_stat.write(tmp_title2a + "\n")
 		tmp_results = {s_index: proteins_names[proteins_species[s_index]] for s_index in range(0, nb_species)}
 		for g_index in range(0, groups_gmax):
 			for s_index in range(0, nb_species):
