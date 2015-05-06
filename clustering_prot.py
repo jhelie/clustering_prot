@@ -943,12 +943,10 @@ def identify_proteins():
 	prot_index2rel = np.arange(0,nb_proteins)
 	prot_index2sindex = np.zeros(nb_proteins, int)
 	for s_index in range(0, nb_species):
-		if s_index == 0:
-			p_start = 0
-			p_end = proteins_nb[proteins_species[s_index]]
-		else:
-			p_start = proteins_nb[proteins_species[s_index-1]]
-			p_end = p_start + proteins_nb[proteins_species[s_index]]		
+		p_start = 0
+		for ss_index in range(0, s_index):
+			p_start += proteins_nb[proteins_species[ss_index]]
+		p_end = p_start + proteins_nb[proteins_species[s_index]]		
 		for p_index in range(p_start, p_end):
 			prot_index2specie[p_index] = proteins_species[s_index]
 		prot_index2rel[p_start:p_end] -= p_start
@@ -2028,12 +2026,12 @@ def write_proteins_neighbours():
 def graph_interactions_proteins():
 	#create filename
 	#---------------
-	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/1_proteins_interactions.svg'
+	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_proteins_interactions.svg'
 
 	#create figure
 	#-------------
 	fig, ax = plt.subplots()
-	fig.suptitle("Distribution of contacts between proteins")
+	fig.suptitle("Heatmap of proteins contacts")
 		
 	#plot data
 	#---------
@@ -2097,6 +2095,28 @@ def graph_interactions_proteins():
 	#plt.subplots_adjust(top=0.9, bottom=0.07, hspace=0.37, left=0.09, right=0.96)
 	fig.savefig(filename_svg)
 	plt.close()	
+	return
+def write_interactions_proteins():
+
+	filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_proteins_interactions.stat'
+	output_stat = open(filename_stat, 'w')
+	output_stat.write("#[Protein contacts statistics - written by clustering_prot v" + str(version_nb) +"]\n")
+	output_stat.write("#This data should be loaded into a numpy array via numpy.loadtxt()\n")
+	output_stat.write("#The data should be interpreted \"vertically\": each column represents the relative distribution of contacts for a particular protein and thus sums to 1\n")
+	output_stat.write("#This data array is thus NOT symmetric.\n")
+	for s_index in range(0, nb_species):
+		p_start = 0
+		for ss_index in range(0, s_index):
+			p_start += proteins_nb[proteins_species[ss_index]]
+		p_end = p_start + proteins_nb[proteins_species[s_index]]		
+		output_stat.write("#" + str(int(p_start)) + " to " + str(int(p_end - 1)) + ": " + str(proteins_names[proteins_species[s_index]]) + "\n")
+	for p_index in range(0, nb_proteins):
+		results = str(round(proteins_ctcts_prot[p_index, 0], 2))
+		for pp_index in range(1, nb_proteins):
+			results += "	" + str(round(proteins_ctcts_prot[p_index, pp_index], 2))
+		output_stat.write(results + "\n")
+	output_stat.close()
+	
 	return
 
 #interactions: residues
@@ -2270,6 +2290,7 @@ def write_clusters_comp():
 	for c_index in range(0, len(cluster_sizes_sampled_TM)):
 		c_size = cluster_sizes_sampled_TM[c_index]
 		results += "	" + str(round(np.sum(clusters_nb[c_size]),2))
+	output_stat.write(results + "\n")
 	output_stat.write("\n")
 	output_stat.write("\n")
 
@@ -2337,13 +2358,15 @@ def write_clusters_comp():
 		output_stat.write(tmp_title2a + "\n")
 		results = "nb"
 		for g_index in range(0, groups_gmax):
-			results += "	" + str(round(np.sum(clusters_nb_group[g_index]),2))
+			results += "	" + str(round(np.sum(clusters_nb_groups[g_index]),2))
+		output_stat.write(results + "\n")
 		output_stat.write("\n")
 		output_stat.write("\n")
 	
 		#average
 		output_stat.write("composition:\n")
 		output_stat.write("************\n")
+		output_stat.write("\n")
 		tmp_title1 = "avg"
 		tmp_title2a = "====="
 		tmp_title2b = "-----"
@@ -3531,7 +3554,7 @@ write_proteins_neighbours()												#to test: gro and xtc
 
 #proteins interactions
 graph_interactions_proteins()
-#write_interactions_proteins()	#to write: heatmap (array format to be read by np.loadtext())
+write_interactions_proteins()
 
 #data zip (xvg column style but with letters too)
 # - 1 file to summarise the protein each protein is in contact with -> allows to store number and type of neighbours
