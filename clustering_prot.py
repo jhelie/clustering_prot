@@ -320,11 +320,15 @@ global lipids_ff_nb
 global colour_group_other
 global colour_leaflet_lower
 global colour_leaflet_upper
+global cog_cutoff_file
+global cog_cutoff_values
 
 vmd_counter = 0
 vmd_cluster_size = ""
 vmd_cluster_group = ""
 lipids_ff_nb = 0
+cog_cutoff_file = False
+cog_cutoff_values = {}
 
 colour_group_other = "#E6E6E6"											#very light grey
 colour_leaflet_lower = "#808080"										#dark grey
@@ -445,11 +449,49 @@ if args.m_algorithm == "cog":
 				print "Error: the --cog_cutoff should either be a float or a text file, see note 7."
 				sys.exit(1)
 			else:
+				print "\nReading cog cutoffs definition file..."
+				cog_cutoff_file = True
+				s_indices = []
+				with open(args.cog_cutoff) as f:
+					lines = f.readlines()
+				for l_index in range(0, len(lines)):
+					#get line content
+					line = lines[l_index]
+					if line[-1] == "\n":
+						line = line[:-1]
+					l_content = line.split(',')
+					
+					#check line format
+					if len(l_content) != 3:
+						print "Error: the format of line " + str(l_index+1) + " is incorrect, see clustering_prot --help, note 7."
+						print "->", line
+						sys.exit(1)
+					else:
+						#store cutoffs 
+						s1_index = int(l_content[0])
+						s2_index = int(l_content[1])
+						s1s2_cutoff = float(l_content[2])
+						cog_cutoff_values[s1_index, s2_index] = s1s2_cutoff
+						cog_cutoff_values[s2_index, s1_index] = s1s2_cutoff
+	
+						#store list of indices
+						s_indices.append(s1_index)
+						s_indices.append(s2_index)
 				
-				print "Error: wrong format for the file specified by --cog_cutoff, see note 7."
-				sys.exit(1)
-
-
+				#check there's no gap
+				s_indices_unique = np.unique(s_indices)
+				if min(s_indices_unique) != 0:
+					print "Error: species indexing should start at 0."
+					sys.exit(1)
+				if max(s_indices_unique) >= len(s_indices_unique):
+					print "Error: cutoff not specified for all species."
+					sys.exit(1)
+				for s_index in range(0, len(s_indices_unique)):
+					for ss_index in range(0, len(s_indices_unique)):
+						if (s_index, ss_index) not in cog_cutoff_values.keys():
+							print "Error: cutoff not specified for all species."
+							sys.exit(1)
+					
 if args.m_algorithm != "density":
 	if '--db_radius' in sys.argv:
 		print "Error: --db_radius option specified but --algorithm option set to '" + str(args.m_algorithm) + "'."
