@@ -1021,13 +1021,15 @@ def identify_proteins():
 			sys.exit(1)
 		if nb_species == 1:
 			print " -warning: different cutoff values specified but only 1 specie of protein found."
-			args.nx_cutoff_file = cog_cutoff_values[0,0]
+			args.nx_cutoff = cog_cutoff_values[0,0]
 		if nb_species < np.sqrt(len(cog_cutoff_values.keys())):
 			print " -warning: more cutoff values specified than possible pair of species."
-		print " -the following contact cutoffs will be used (in Angstrom):"
-		for s_index in range(0, nb_proteins):
-			for ss_index in range(0, nb_proteins):
+		print " -the following contact cutoffs will be used (in Angstrom):"		
+		for s_index in range(0, nb_species):
+			for ss_index in range(0, nb_species):
 				print "   " + proteins_names[proteins_species[s_index]] + "-" + proteins_names[proteins_species[ss_index]] + ": " + str(cog_cutoff_values[s_index, ss_index])
+	elif nb_species > 1:
+		print " -warning: different protein species but same cutoff value used for all contacts (" + str(args.nx_cutoff) + " Angstrom)."
 
 	#create dictionaries
 	#===================
@@ -1415,9 +1417,9 @@ def detect_clusters_connectivity(dist, box_dim):
 		#concatenate horizontally
 		tmp_connected = {}
 		for s_index in range(0, nb_species):
-			tmp_connected[s_index] = d[s_index,0]
-			for ss_index in range(1, nb_species):
-				tmp_connected[s_index] = np.concatenate((tmp_connected, d[s_index, ss_index]), axis = 1)
+			tmp_connected[s_index] = d[s_index, 0]
+			for ss_index in range(1, nb_species):				
+				tmp_connected[s_index] = np.concatenate((tmp_connected[s_index], d[s_index, ss_index]), axis = 1)
 		
 		#then concatenate the lines vertically
 		connected = tmp_connected[0]
