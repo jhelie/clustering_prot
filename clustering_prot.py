@@ -1412,7 +1412,7 @@ def detect_clusters_connectivity(dist, box_dim):
 		d = {}
 		for s_index in range(0, nb_species):
 			for ss_index in range(0, nb_species):
-				d[s_index, ss_index] = dist[proteins_boundaries[proteins_species[s_index]][0]:proteins_boundaries[proteins_species[s_index]][1], proteins_boundaries[proteins_species[s_index]][0]:proteins_boundaries[proteins_species[s_index]][1]] < cog_cutoff_values[s_index, ss_index]
+				d[s_index, ss_index] = dist[proteins_boundaries[proteins_species[s_index]][0]:proteins_boundaries[proteins_species[s_index]][1], proteins_boundaries[proteins_species[ss_index]][0]:proteins_boundaries[proteins_species[ss_index]][1]] < cog_cutoff_values[s_index, ss_index]
 
 		#concatenate horizontally
 		tmp_connected = {}
@@ -1420,12 +1420,12 @@ def detect_clusters_connectivity(dist, box_dim):
 			tmp_connected[s_index] = d[s_index, 0]
 			for ss_index in range(1, nb_species):				
 				tmp_connected[s_index] = np.concatenate((tmp_connected[s_index], d[s_index, ss_index]), axis = 1)
-		
+			
 		#then concatenate the lines vertically
 		connected = tmp_connected[0]
 		for s_index in range(1, nb_species):
 			connected = np.concatenate((connected, tmp_connected[s_index]), axis = 0)
-
+	
 	#same cutoff for everyone:
 	#-------------------------
 	else:
