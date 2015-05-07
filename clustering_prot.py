@@ -210,8 +210,9 @@ The following python modules are needed :
      '0,1,80'
    
 	NB: this means that the systems MUST be built so that the different protein species are listed
-	sequentially in the gro/pdb files (they cannot alternate). Doing otherwise would generally be poor
-	practice and lead to complex topology files anyway.
+	sequentially in the gro/pdb files (they cannot alternate) ant that you know the order in which
+	the species are listed. Doing otherwise would generally be poor practice and lead to complex
+	topology files anyway.
  
 
 [ USAGE ]
@@ -1026,7 +1027,7 @@ def identify_proteins():
 			print " -warning: more cutoff values specified than possible pair of species."
 		print " -the following contact cutoffs will be used (in Angstrom):"		
 		for s_index in range(0, nb_species):
-			for ss_index in range(0, nb_species):
+			for ss_index in range(s_index, nb_species):
 				print "   " + proteins_names[proteins_species[s_index]] + "-" + proteins_names[proteins_species[ss_index]] + ": " + str(cog_cutoff_values[s_index, ss_index])
 	elif nb_species > 1:
 		print " -warning: different protein species but same cutoff value used for all contacts (" + str(args.nx_cutoff) + " Angstrom)."
@@ -2047,28 +2048,30 @@ def write_proteins_neighbours():
 	#--------------
 	if args.xtcfilename == "no":
 
-		filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/3_clusters_compositions/3_clusters_compositions_by_sizes.stat'
+		filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_proteins_neighbours.stat'
 		output_stat = open(filename_stat, 'w')
 		output_stat.write("[Number of neighbours of proteins - written by clustering_prot v" + str(version_nb) +"]\n")
 		output_stat.write("\n")
 	
 		#average
-		tmp_title1 = "AVG	"
-		tmp_title2 = "--------"
-		tmp_title3 = "STD	"
+		tmp_title1 = "avg"
+		tmp_title2a = "====="
+		tmp_title2b = "-----"
+		tmp_title3 = "std"
 		for s_index in range(0, nb_species):
 			s_name = proteins_names[proteins_species[s_index]]
 			tmp_title1 += "	" + str(s_name)
-			tmp_title2 += "-------"		
+			tmp_title2a += "========"
+			tmp_title2b += "--------"
 			tmp_title3 += "	" + str(s_name)
 		output_stat.write(tmp_title1 + "\n")
-		output_stat.write(tmp_title2 + "\n")
+		output_stat.write(tmp_title2a + "\n")
 		for ss_index in range(0, nb_species):
 			results = proteins_names[proteins_species[ss_index]]
 			for s_index in range(0, nb_species):
 				results += "	" + str(round(proteins_nb_neighbours_avg_detail[s_index, ss_index],2))
 			output_stat.write(results + "\n")
-		output_stat.write(tmp_title2 + "\n")
+		output_stat.write(tmp_title2b + "\n")
 		results = "total"
 		for s_index in range(0, nb_species):
 			results += "	" + str(round(np.sum(proteins_nb_neighbours_avg_detail[s_index, :]),2))
@@ -2077,13 +2080,12 @@ def write_proteins_neighbours():
 		
 		#std
 		output_stat.write(tmp_title3 + "\n")
-		output_stat.write(tmp_title2 + "\n")
+		output_stat.write(tmp_title2a + "\n")
 		for ss_index in range(0, nb_species):
 			results = proteins_names[proteins_species[ss_index]]
 			for s_index in range(0, nb_species):
 				results += "	" + str(round(proteins_nb_neighbours_std_detail[s_index, ss_index],2))
 			output_stat.write(results + "\n")
-		output_stat.write(results + "\n")
 
 
 	#case: xtc file
