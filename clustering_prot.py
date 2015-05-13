@@ -1864,8 +1864,6 @@ def calculate_statistics():
 		for s_index2 in range(s_index1, nb_species):
 			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:				
 				proteins_ctcts_res[s_index1,s_index2] = proteins_ctcts_res[s_index1,s_index2] / float(np.sum(proteins_ctcts_res[s_index1,s_index2])) * 100
-				if s_index1 == s_index2:
-					proteins_ctcts_res[s_index1,s_index2] *= 2
 
 	#neighbours of proteins
 	#----------------------
@@ -2264,12 +2262,12 @@ def graph_interactions_residues_2D():
 				fig = plt.figure(figsize=(8,8))
 				fig.suptitle("Most significant interactions between " + str(proteins_names[s1]) + " and " + str(proteins_names[s2]))
 				#heatmap
-				ax_heatmap = plt.axes([0.1, 0.15, 0.6, 0.6])
-				ax_heatmap_cbar = plt.axes([0.1, 0.05, 0.6, 0.02])
+				ax_heatmap = plt.axes([0.095, 0.15, 0.6, 0.6])
+				ax_heatmap_cbar = plt.axes([0.095, 0.05, 0.6, 0.02])
 				#bar charts
-				ax_bar_top = plt.axes([0.1, 0.755, 0.6, 0.2])
-				ax_bar_right = plt.axes([0.705, 0.15, 0.2, 0.6])
-				ax_bar_cbar = plt.axes([0.91, 0.45, 0.02, 0.6])
+				ax_bar_top = plt.axes([0.095, 0.755, 0.6, 0.2])
+				ax_bar_right = plt.axes([0.7, 0.15, 0.2, 0.6])
+				ax_bar_cbar = plt.axes([0.91, 0.15, 0.02, 0.6])
 				
 				#plot data
 				#---------				
@@ -2284,7 +2282,7 @@ def graph_interactions_residues_2D():
 				tmp_s1_max = np.amax(tmp_s1)
 				tmp_s2_max = np.amax(tmp_s2)
 				tmp_s1s2_max = max(tmp_s1_max, tmp_s2_max)
-				scalar_map = cm.ScalarMappable(norm = mcolors.Normalize(vmin = 0, vmax = tmp_s1s2_max), cmap = plt.cm.Reds)
+				scalar_map = cm.ScalarMappable(norm = mcolors.Normalize(vmin = 0, vmax = tmp_s1s2_max), cmap = plt.cm.Reds)				
 				ax_bar_top.bar(np.arange(0, np.shape(tmp_s1s2_plot)[1]), tmp_s2, color = scalar_map.to_rgba(tmp_s2))
 				ax_bar_right.barh(np.arange(0, np.shape(tmp_s1s2_plot)[0]), tmp_s1, color = scalar_map.to_rgba(tmp_s1))
 				
@@ -2297,7 +2295,9 @@ def graph_interactions_residues_2D():
 				ax_heatmap.set_ylabel(str(proteins_names[s1]) + ' residues', fontsize="small")
 				#bar charts
 				ax_bar_top.set_ylim([0, tmp_s2_max])
+				ax_bar_top.set_xlim([0, np.shape(tmp_s1s2_plot)[1]])
 				ax_bar_right.set_xlim([0, tmp_s1_max])
+				ax_bar_right.set_ylim([0, np.shape(tmp_s1s2_plot)[0]])
 				
 				#set axes ticks and ticklabels
 				#-----------------------------
@@ -2331,15 +2331,15 @@ def graph_interactions_residues_2D():
 				#----------
 				#heatmap
 				heatmap_cbar = fig.colorbar(p, cax = ax_heatmap_cbar, orientation = 'horizontal')
-				heatmap_cbar.set_label('% of interactions accounter by residues pairs', size = 10)
-				heatmap_cbar.formatter.set_powerlimits((0, 0))
+				heatmap_cbar.set_label('interactions accounted for by residues pairs (%)', size = 9)
+				#heatmap_cbar.formatter.set_powerlimits((0, 0))
 				heatmap_cbar.ax.tick_params(labelsize = 7)
 				heatmap_cbar.update_ticks()
 				#bar charts
 				scalar_map.set_array(tmp_s1s2_max)
 				bar_cbar = plt.colorbar(scalar_map, cax = ax_bar_cbar)				
-				bar_cbar.set_label('% of interactions accounted by residues', size = 10)
-				bar_cbar.formatter.set_powerlimits((0, 0))
+				bar_cbar.set_label('interactions accounted for by residues (%)', size = 9)
+				#bar_cbar.formatter.set_powerlimits((0, 0))
 				bar_cbar.ax.tick_params(labelsize = 7)
 				bar_cbar.update_ticks()
 			
