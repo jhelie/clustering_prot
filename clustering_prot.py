@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=Fals
 **********************************************
 v''' + version_nb + '''
 author: Jean Helie (jean.helie@bioch.ox.ac.uk)
+contributors: Anna Duncan, Matthieu Chavent
 git: https://github.com/jhelie/clustering_prot
 **********************************************
 	
@@ -239,7 +240,7 @@ Proteins properties
 --species		: file defining name,multiplicity and sequence of proteins, see note 6
 --groups		: cluster groups definition file, see note 4 [BETA]
 --res_contact	8	: cutoff to consider contacts between residues c.o.g (Angstrom)
---res_show	0.1	: show all residues interactions accounting for at least that much contacts between proteins (%)
+--res_show	1	: show interactions for residues for at least that many % of contacts between proteins
 --algorithm	min	: 'cog','min' or 'density', see 'DESCRIPTION'
 --nx_cutoff 		: networkX cutoff distance for protein-protein contact (Angstrom or file), see note 7
 --db_radius 	20	: DBSCAN search radius (Angstrom)
@@ -271,7 +272,7 @@ parser.add_argument('--use_gro', dest='use_gro', action='store_true', help=argpa
 parser.add_argument('--species', nargs=1, dest='species_file', default=['no'], help=argparse.SUPPRESS)
 parser.add_argument('--groups', nargs=1, dest='cluster_groups_file', default=['no'], help=argparse.SUPPRESS)
 parser.add_argument('--res_contact', nargs=1, dest='res_contact', default=[8], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--res_show', nargs=1, dest='res_show', default=[0.1], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--res_show', nargs=1, dest='res_show', default=[1], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--algorithm', dest='m_algorithm', choices=['cog','min','density'], default='cog', help=argparse.SUPPRESS)
 parser.add_argument('--nx_cutoff', nargs=1, dest='nx_cutoff', help=argparse.SUPPRESS, required=True)
 parser.add_argument('--db_radius', nargs=1, dest='dbscan_dist', default=[20], type=float, help=argparse.SUPPRESS)
@@ -306,7 +307,7 @@ args.selection_file_ff = args.selection_file_ff[0]
 args.species_file = args.species_file[0]
 args.cluster_groups_file = args.cluster_groups_file[0]
 args.res_contact = args.res_contact[0]
-args.res_show = args.res_show[0]/float(100)
+args.res_show = args.res_show[0]
 args.nx_cutoff = args.nx_cutoff[0]
 args.dbscan_dist = args.dbscan_dist[0]
 args.dbscan_nb = args.dbscan_nb[0]
@@ -371,7 +372,7 @@ try:
 	mcolorconv = mcolors.ColorConverter()
 	import matplotlib.cm as cm				#colours library
 	import matplotlib.ticker
-	from matplotlib.ticker import MaxNLocator
+	from matplotlib.ticker import MaxNLocator, NullFormatter, ScalarFormatter
 	from matplotlib.font_manager import FontProperties
 	fontP=FontProperties()
 except:
@@ -1862,7 +1863,9 @@ def calculate_statistics():
 	for s_index1 in range(0,nb_species):
 		for s_index2 in range(s_index1, nb_species):
 			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:				
-				proteins_ctcts_res[s_index1,s_index2] /= float(np.sum(proteins_ctcts_res[s_index1,s_index2]))
+				proteins_ctcts_res[s_index1,s_index2] = proteins_ctcts_res[s_index1,s_index2] / float(np.sum(proteins_ctcts_res[s_index1,s_index2])) * 100
+				if s_index1 == s_index2:
+					proteins_ctcts_res[s_index1,s_index2] *= 2
 
 	#neighbours of proteins
 	#----------------------
@@ -2246,7 +2249,7 @@ def write_interactions_proteins():
 	return
 
 #interactions: residues
-def graph_interactions_residues():
+def graph_interactions_residues_2D():
 	for s_index1 in range(0,nb_species):
 		s1 = proteins_species[s_index1]
 		for s_index2 in range(s_index1, nb_species):
@@ -2254,51 +2257,166 @@ def graph_interactions_residues():
 			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:			
 				#create filename
 				#---------------
-				filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_interactions_residues_' + str(proteins_names[s1]) + '-' + str(proteins_names[s2]) + '.svg'
+				filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_interactions_residues_' + str(proteins_names[s1]) + '-' + str(proteins_names[s2]) + '_2D.svg'
+			
+				#create figure
+				#-------------
+				fig = plt.figure(figsize=(8,8))
+				fig.suptitle("Most significant interactions between " + str(proteins_names[s1]) + " and " + str(proteins_names[s2]))
+				#heatmap
+				ax_heatmap = plt.axes([0.1, 0.15, 0.6, 0.6])
+				ax_heatmap_cbar = plt.axes([0.1, 0.05, 0.6, 0.02])
+				#bar charts
+				ax_bar_top = plt.axes([0.1, 0.755, 0.6, 0.2])
+				ax_bar_right = plt.axes([0.705, 0.15, 0.2, 0.6])
+				ax_bar_cbar = plt.axes([0.91, 0.45, 0.02, 0.6])
+				
+				#plot data
+				#---------				
+				tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 1)
+				tmp_s2 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 0)
+				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2][tmp_s1 > args.res_show][:, tmp_s2 > args.res_show]
+				tmp_s1 = tmp_s1[tmp_s1 > args.res_show]
+				tmp_s2 = tmp_s2[tmp_s2 > args.res_show]
+				#heatmap
+				p = ax_heatmap.pcolormesh(tmp_s1s2_plot, cmap = plt.cm.Greens)
+				#bar charts
+				tmp_s1_max = np.amax(tmp_s1)
+				tmp_s2_max = np.amax(tmp_s2)
+				tmp_s1s2_max = max(tmp_s1_max, tmp_s2_max)
+				scalar_map = cm.ScalarMappable(norm = mcolors.Normalize(vmin = 0, vmax = tmp_s1s2_max), cmap = plt.cm.Reds)
+				ax_bar_top.bar(np.arange(0, np.shape(tmp_s1s2_plot)[1]), tmp_s2, color = scalar_map.to_rgba(tmp_s2))
+				ax_bar_right.barh(np.arange(0, np.shape(tmp_s1s2_plot)[0]), tmp_s1, color = scalar_map.to_rgba(tmp_s1))
+				
+				#set axes limits and labels
+				#--------------------------
+				#heatmap
+				ax_heatmap.set_xlim([0, np.shape(tmp_s1s2_plot)[1]])
+				ax_heatmap.set_ylim([0, np.shape(tmp_s1s2_plot)[0]])
+				ax_heatmap.set_xlabel(str(proteins_names[s2]) + ' residues', fontsize="small")
+				ax_heatmap.set_ylabel(str(proteins_names[s1]) + ' residues', fontsize="small")
+				#bar charts
+				ax_bar_top.set_ylim([0, tmp_s2_max])
+				ax_bar_right.set_xlim([0, tmp_s1_max])
+				
+				#set axes ticks and ticklabels
+				#-----------------------------
+				#heatmap
+				s1_labels = [proteins_residues[s1][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 1)) if res]
+				s2_labels = [proteins_residues[s2][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 0)) if res]
+				ax_heatmap.set_xticks(np.arange(0.5, len(s2_labels) + 0.5))
+				ax_heatmap.set_yticks(np.arange(0.5, len(s1_labels) + 0.5))
+				ax_heatmap.set_xticklabels(s2_labels, rotation = 90)
+				ax_heatmap.set_yticklabels(s1_labels)
+				plt.setp(ax_heatmap.xaxis.get_majorticklabels(), fontsize="xx-small" )
+				plt.setp(ax_heatmap.yaxis.get_majorticklabels(), fontsize="xx-small" )
+				#bar charts
+				ax_bar_top.xaxis.set_major_formatter(NullFormatter())
+				ax_bar_top.spines['top'].set_visible(False)
+				ax_bar_top.spines['right'].set_visible(False)
+				ax_bar_top.xaxis.set_ticks_position('bottom')
+				ax_bar_top.yaxis.set_ticks_position('left')
+				plt.setp(ax_bar_top.xaxis.get_majorticklabels(), fontsize="xx-small" )
+				plt.setp(ax_bar_top.yaxis.get_majorticklabels(), fontsize="xx-small" )
+
+				ax_bar_right.yaxis.set_major_formatter(NullFormatter())
+				ax_bar_right.spines['top'].set_visible(False)
+				ax_bar_right.spines['right'].set_visible(False)
+				ax_bar_right.xaxis.set_ticks_position('bottom')
+				ax_bar_right.yaxis.set_ticks_position('left')
+				plt.setp(ax_bar_right.xaxis.get_majorticklabels(), fontsize="xx-small" )
+				plt.setp(ax_bar_right.yaxis.get_majorticklabels(), fontsize="xx-small" )
+				
+				#colour bar
+				#----------
+				#heatmap
+				heatmap_cbar = fig.colorbar(p, cax = ax_heatmap_cbar, orientation = 'horizontal')
+				heatmap_cbar.set_label('% of interactions accounter by residues pairs', size = 10)
+				heatmap_cbar.formatter.set_powerlimits((0, 0))
+				heatmap_cbar.ax.tick_params(labelsize = 7)
+				heatmap_cbar.update_ticks()
+				#bar charts
+				scalar_map.set_array(tmp_s1s2_max)
+				bar_cbar = plt.colorbar(scalar_map, cax = ax_bar_cbar)				
+				bar_cbar.set_label('% of interactions accounted by residues', size = 10)
+				bar_cbar.formatter.set_powerlimits((0, 0))
+				bar_cbar.ax.tick_params(labelsize = 7)
+				bar_cbar.update_ticks()
+			
+				#save figure
+				#-----------
+				fig.savefig(filename_svg)
+				plt.close()	
+	return
+def graph_interactions_residues_1D():
+	for s_index1 in range(0,nb_species):
+		s1 = proteins_species[s_index1]
+		for s_index2 in range(s_index1, nb_species):
+			s2 = proteins_species[s_index2]
+			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:			
+				#create filename
+				#---------------
+				filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_interactions_residues_' + str(proteins_names[s1]) + '-' + str(proteins_names[s2]) + '_1D.svg'
 			
 				#create figure
 				#-------------
 				fig, ax = plt.subplots()
-				fig.suptitle("Most significant interactions between " + str(proteins_names[s1]) + " and " + str(proteins_names[s2]))
+				fig.suptitle("% of interactions between " + str(proteins_names[s1]) + " and " + str(proteins_names[s2]))
 				
 				#plot data
 				#---------				
-				if s2 == s1:
-					tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2] > args.res_show/float(2)
+				tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 1)
+				tmp_s2 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 0)
+				tmp_s1s2_max = max(np.amax(tmp_s1), np.amax(tmp_s2))
+				#homo interactions
+				if s1 == s2:
+					ax1 = plt.subplot(1, 1, 1)
+					tmp_s1.sort()
+					tmp_s1 = tmp_s1[::-1]
+					ax1.bar(np.arange(0, proteins_length[s1]), tmp_s1, color=proteins_colours[s1], edgecolor = "none")
+				#hetero interactions
 				else:
-					tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2] > args.res_show
-				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2][np.any(tmp_s1s2_plot, axis = 1)][:,np.any(tmp_s1s2_plot, axis = 0)]
-				plt.pcolormesh(tmp_s1s2_plot, cmap = plt.cm.Greens)
-								
-				#label axes
-				#----------
-				plt.axis([0, np.shape(tmp_s1s2_plot)[1], 0, np.shape(tmp_s1s2_plot)[0]])
-				plt.xlabel(str(proteins_names[s2]) + ' residues', fontsize="small")
-				plt.ylabel(str(proteins_names[s1]) + ' residues', fontsize="small")
+					#s1
+					ax1 = plt.subplot(2, 1, 1)
+					tmp_s1.sort()
+					tmp_s1 = tmp_s1[::-1]
+					ax1.bar(np.arange(0, proteins_length[s1]), tmp_s1, color=proteins_colours[s1], edgecolor = "none")
+					#s2
+					ax2 = plt.subplot(2, 1, 2)
+					tmp_s2.sort()
+					tmp_s2 = tmp_s2[::-1]
+					ax2.bar(np.arange(0, proteins_length[s2]), tmp_s2, color=proteins_colours[s2], edgecolor = "none")
 				
-				#label axes ticks
-				#----------------
-				s1_labels = [proteins_residues[s1][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 1)) if res]
-				s2_labels = [proteins_residues[s2][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 0)) if res]
-				plt.xticks(np.arange(0.5, len(s2_labels) + 0.5), rotation = 90)
-				plt.yticks(np.arange(0.5, len(s1_labels) + 0.5))
-				ax.spines['top'].set_visible(False)
-				ax.spines['right'].set_visible(False)
-				ax.xaxis.set_ticks_position('bottom')
-				ax.yaxis.set_ticks_position('left')
-				ax.set_xticklabels(s2_labels)
-				ax.set_yticklabels(s1_labels)
-				plt.setp(ax.xaxis.get_majorticklabels(), fontsize="xx-small" )
-				plt.setp(ax.yaxis.get_majorticklabels(), fontsize="xx-small" )
+				#set axes limits and labels
+				#--------------------------
+				ax1.set_xlim([0, proteins_length[s1]])
+				ax1.set_ylim([0, tmp_s1s2_max])
+				ax1.set_xlabel(proteins_names[s1] + " residues", fontsize="small")
+				ax1.set_ylabel("% of interactions", fontsize="small")
+				ax1.hlines(args.res_show, 0, proteins_length[s1], linestyles = 'dashed')
+				if s1 != s2:
+					ax2.set_xlim([0, proteins_length[s2]])
+					ax2.set_ylim([0, tmp_s1s2_max])
+					ax2.set_xlabel(proteins_names[s2] + " residues", fontsize="small")
+					ax2.set_ylabel("% of interactions", fontsize="small")
+					ax2.hlines(args.res_show, 0, proteins_length[s2], linestyles = 'dashed')
 				
-				#colour bar
-				#----------
-				cbar = plt.colorbar()
-				cbar.set_label('relative number of contacts', size = 10)
-				cbar.formatter.set_powerlimits((0, 0))
-				cbar.update_ticks()
-				cbar.ax.tick_params(labelsize = 8)
-			
+				#set axes ticks and ticklabels
+				#-----------------------------
+				ax1.xaxis.set_major_formatter(NullFormatter())
+				ax1.spines['top'].set_visible(False)
+				ax1.spines['right'].set_visible(False)
+				ax1.xaxis.set_ticks_position('bottom')
+				ax1.yaxis.set_ticks_position('left')
+				plt.setp(ax1.yaxis.get_majorticklabels(), fontsize="xx-small" )				
+				if s1 != s2:
+					ax2.xaxis.set_major_formatter(NullFormatter())
+					ax2.spines['top'].set_visible(False)
+					ax2.spines['right'].set_visible(False)
+					ax2.xaxis.set_ticks_position('bottom')
+					ax2.yaxis.set_ticks_position('left')
+					plt.setp(ax2.yaxis.get_majorticklabels(), fontsize="xx-small" )
+				
 				#save figure
 				#-----------
 				fig.savefig(filename_svg)
@@ -3687,7 +3805,8 @@ write_interactions_proteins()
 # - 1 file to summarise the the cluster definition each protein he's in (e.g. A1B45A56) -> allows to store size and composition
 
 #residues interactions
-graph_interactions_residues()
+graph_interactions_residues_2D()
+graph_interactions_residues_1D()
 
 #cluster composition
 graph_clusters_comp()
