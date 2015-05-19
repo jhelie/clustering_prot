@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.2"
+version_nb = "0.0.3"
 parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter, description=\
 '''
 **********************************************
@@ -1289,7 +1289,7 @@ def struct_time():
 
 	global frames_nb
 	global frames_time
-	frames_nb = np.zeros(nb_frames_to_process)
+	frames_nb = np.zeros(nb_frames_to_process, int)
 	frames_time = np.zeros(nb_frames_to_process)
 
 	return
