@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.3"
+version_nb = "0.0.4"
 parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter, description=\
 '''
 **********************************************
@@ -1849,7 +1849,6 @@ def process_oligomers():
 					proteins_ctcts_res_new[s_index1, s_index2] = np.zeros((proteins_length[s1], proteins_length[s2]))
 					proteins_ctcts_res_new[s_index1, s_index2] += proteins_ctcts_res[s_index1, s_index2][:, :]
 			
-	
 	#update global interaction matrix
 	proteins_ctcts_res = proteins_ctcts_res_new
 		
@@ -2327,11 +2326,11 @@ def graph_interactions_residues_2D():
 				
 				#plot data
 				#---------				
-				tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 1)
-				tmp_s2 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 0)
-				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2][tmp_s1 > args.res_show][:, tmp_s2 > args.res_show]
-				tmp_s1 = tmp_s1[tmp_s1 > args.res_show]
-				tmp_s2 = tmp_s2[tmp_s2 > args.res_show]
+				tmp_s1_all = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 1)
+				tmp_s2_all = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 0)
+				tmp_s1s2_plot = proteins_ctcts_res[s_index1,s_index2][tmp_s1_all > args.res_show][:, tmp_s2_all > args.res_show]
+				tmp_s1 = tmp_s1_all[tmp_s1_all > args.res_show]
+				tmp_s2 = tmp_s2_all[tmp_s2_all > args.res_show]
 				#heatmap
 				p = ax_heatmap.pcolormesh(tmp_s1s2_plot, cmap = plt.cm.Greens)
 				#bar charts
@@ -2358,8 +2357,8 @@ def graph_interactions_residues_2D():
 				#set axes ticks and ticklabels
 				#-----------------------------
 				#heatmap
-				s1_labels = [proteins_residues[s1][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 1)) if res]
-				s2_labels = [proteins_residues[s2][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(np.any(tmp_s1s2_plot, axis = 0)) if res]
+				s1_labels = [proteins_residues[s1][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(tmp_s1_all > args.res_show) if res]
+				s2_labels = [proteins_residues[s2][i] + str(np.arange(1,proteins_length[s1]+1)[i]) for i, res in enumerate(tmp_s2_all > args.res_show) if res]				
 				ax_heatmap.set_xticks(np.arange(0.5, len(s2_labels) + 0.5))
 				ax_heatmap.set_yticks(np.arange(0.5, len(s1_labels) + 0.5))
 				ax_heatmap.set_xticklabels(s2_labels, rotation = 90)
