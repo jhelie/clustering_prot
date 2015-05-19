@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.1"
+version_nb = "0.0.2"
 parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter, description=\
 '''
 **********************************************
@@ -241,7 +241,7 @@ Proteins properties
 --groups		: cluster groups definition file, see note 4 [BETA]
 --res_contact	8	: cutoff to consider contacts between residues c.o.g (Angstrom)
 --res_show	1	: show interactions for residues for at least that many % of contacts between proteins
---algorithm	min	: 'cog','min' or 'density', see 'DESCRIPTION'
+--algorithm	cog	: 'cog','min' or 'density', see 'DESCRIPTION'
 --nx_cutoff 		: networkX cutoff distance for protein-protein contact (Angstrom or file), see note 7
 --db_radius 	20	: DBSCAN search radius (Angstrom)
 --db_neighbours	3	: DBSCAN minimum number of neighbours within a circle of radius --db_radius	
@@ -510,9 +510,9 @@ else:
 #create folder name
 if args.output_folder == "no":
 	if args.xtcfilename == "no":
-		args.output_folder = "clustering_prot_" + args.grofilename[:-4]
+		args.output_folder = "clustering_prot_" + args.grofilename[:-4].split('/')[-1]
 	else:
-		args.output_folder = "clustering_prot_" + args.xtcfilename[:-4]
+		args.output_folder = "clustering_prot_" + args.xtcfilename[:-4].split('/')[-1]
 
 #create folder and sub-folders
 if os.path.isdir(args.output_folder):
@@ -3483,9 +3483,9 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 		#-----
 		#create file
 		if args.xtcfilename == "no":
-			filename_details = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/' + args.grofilename[:-4] + '_annotated_clustprot_sizes_sampled.stat'		
+			filename_details = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/' + args.grofilename[:-4].split('/')[-1] + '_annotated_clustprot_sizes_sampled.stat'		
 		else:
-			filename_details = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/' + args.xtcfilename[:-4] + '_annotated_clustprot_sizes_sampled.stat'		
+			filename_details = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/' + args.xtcfilename[:-4].split('/')[-1] + '_annotated_clustprot_sizes_sampled.stat'		
 		output_stat = open(filename_details, 'w')		
 	
 		#general info
@@ -3522,9 +3522,9 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 		if args.cluster_groups_file != "no":
 			#create file
 			if args.xtcfilename == "no":
-				filename_details = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/' + args.grofilename[:-4] + '_annotated_clustprot_groups_sampled.stat'		
+				filename_details = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/' + args.grofilename[:-4].split('/')[-1] + '_annotated_clustprot_groups_sampled.stat'		
 			else:
-				filename_details = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/' + args.xtcfilename[:-4] + '_annotated_clustprot_groups_sampled.stat'		
+				filename_details = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/' + args.xtcfilename[:-4].split('/')[-1] + '_annotated_clustprot_groups_sampled.stat'		
 			output_stat = open(filename_details, 'w')		
 
 			#general info
@@ -3569,9 +3569,9 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 		#-----
 		#create file
 		if args.xtcfilename == "no":
-			filename_details=os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/sizes/' + args.grofilename[:-4] + '_annotated_clusterprot_sizes.stat'
+			filename_details=os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/sizes/' + args.grofilename[:-4].split('/')[-1] + '_annotated_clusterprot_sizes.stat'
 		else:
-			filename_details=os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/sizes/' + args.xtcfilename[:-4] + '_annotated_clusterprot_sizes_' + str(int(f_t)).zfill(5) + 'ns.stat'
+			filename_details=os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/sizes/' + args.xtcfilename[:-4].split('/')[-1] + '_annotated_clusterprot_sizes_' + str(int(f_t)).zfill(5) + 'ns.stat'
 		output_stat = open(filename_details, 'w')		
 	
 		#general info
@@ -3614,9 +3614,9 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 		if args.cluster_groups_file != "no":
 			#create file
 			if args.xtcfilename == "no":
-				filename_details = os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/groups/' + args.grofilename[:-4] + '_annotated_clusterprot_groups.stat'
+				filename_details = os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/groups/' + args.grofilename[:-4].split('/')[-1] + '_annotated_clusterprot_groups.stat'
 			else:
-				filename_details = os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/groups/' + args.xtcfilename[:-4] + '_annotated_clusterprot_groups_' + str(int(f_t)).zfill(5) + 'ns.stat'
+				filename_details = os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/groups/' + args.xtcfilename[:-4].split('/')[-1] + '_annotated_clusterprot_groups_' + str(int(f_t)).zfill(5) + 'ns.stat'
 			output_stat = open(filename_details, 'w')		
 		
 			#general info
@@ -3671,9 +3671,9 @@ def write_frame_snapshot(f_index, f_t):									#DONE
 	
 	#write annotated file
 	if args.xtcfilename == "no":
-		all_atoms.write(os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/sizes/' + args.grofilename[:-4] + '_annotated_clusterprot_sizes', format="PDB")
+		all_atoms.write(os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/sizes/' + args.grofilename[:-4].split('/')[-1] + '_annotated_clusterprot_sizes', format="PDB")
 	else:
-		tmp_name = os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/sizes/' + args.xtcfilename[:-4] + '_annotated_clusterprot_sizes_' + str(int(f_t)).zfill(5) + 'ns.pdb'
+		tmp_name = os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/sizes/' + args.xtcfilename[:-4].split('/')[-1] + '_annotated_clusterprot_sizes_' + str(int(f_t)).zfill(5) + 'ns.pdb'
 		W = Writer(tmp_name, nb_atoms)
 		W.write(all_atoms)
 	
@@ -3686,9 +3686,9 @@ def write_frame_snapshot(f_index, f_t):									#DONE
 		
 		#write annotated file
 		if args.xtcfilename == "no":
-			all_atoms.write(os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/groups/' + args.grofilename[:-4] + '_annotated_clusterprot_groups', format = "PDB")
+			all_atoms.write(os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/groups/' + args.grofilename[:-4].split('/')[-1] + '_annotated_clusterprot_groups', format = "PDB")
 		else:
-			tmp_name=os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/groups/' + args.xtcfilename[:-4] + '_annotated_clusterprot_groups_' + str(int(f_t)).zfill(5) + 'ns.pdb'
+			tmp_name=os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/groups/' + args.xtcfilename[:-4].split('/')[-1] + '_annotated_clusterprot_groups_' + str(int(f_t)).zfill(5) + 'ns.pdb'
 			W = Writer(tmp_name, nb_atoms)
 			W.write(all_atoms)
 		
@@ -3699,9 +3699,9 @@ def write_frame_annotation(f_index, f_t):								#DONE
 	#-----
 	#create file
 	if args.xtcfilename == "no":
-		filename_details=os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/sizes/' + args.grofilename[:-4] + '_annotated_clusterprot_sizes.txt'
+		filename_details=os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/sizes/' + args.grofilename[:-4].split('/')[-1] + '_annotated_clusterprot_sizes.txt'
 	else:
-		filename_details=os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/sizes/' + args.xtcfilename[:-4] + '_annotated_clusterprot_sizes_' + str(int(f_t)).zfill(5) + 'ns.txt'
+		filename_details=os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/sizes/' + args.xtcfilename[:-4].split('/')[-1] + '_annotated_clusterprot_sizes_' + str(int(f_t)).zfill(5) + 'ns.txt'
 	output_stat = open(filename_details, 'w')		
 
 	#output VMD protein selection line
@@ -3725,9 +3725,9 @@ def write_frame_annotation(f_index, f_t):								#DONE
 	if args.cluster_groups_file != "no":
 		#create file
 		if args.xtcfilename == "no":
-			filename_details = os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/groups/' + args.grofilename[:-4] + '_annotated_clusterprot_groups.txt'
+			filename_details = os.getcwd() + '/' + str(args.output_folder) + '/1_snapshots/groups/' + args.grofilename[:-4].split('/')[-1] + '_annotated_clusterprot_groups.txt'
 		else:
-			filename_details = os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/groups/' + args.xtcfilename[:-4] + '_annotated_clusterprot_groups_' + str(int(f_t)).zfill(5) + 'ns.txt'
+			filename_details = os.getcwd() + "/" + str(args.output_folder) + '/1_snapshots/groups/' + args.xtcfilename[:-4].split('/')[-1] + '_annotated_clusterprot_groups_' + str(int(f_t)).zfill(5) + 'ns.txt'
 		output_stat = open(filename_details, 'w')		
 	
 		#output VMD protein selection line
@@ -3754,10 +3754,10 @@ def write_xtc_annotation(action):										#DONE
 	#create file name
 	#----------------
 	if action == "initialise":
-		output_xtc_annotate_cluster_size = os.getcwd() + '/' + str(args.output_folder) + '/6_VMD/' + args.xtcfilename[:-4] + '_annotated_clustprot_sizes.txt'
+		output_xtc_annotate_cluster_size = os.getcwd() + '/' + str(args.output_folder) + '/6_VMD/' + args.xtcfilename[:-4].split('/')[-1] + '_annotated_clustprot_sizes.txt'
 		if args.cluster_groups_file != "no":
 			global output_xtc_annotate_cluster_group
-			output_xtc_annotate_cluster_group = os.getcwd() + '/' + str(args.output_folder) + '/6_VMD/' + args.xtcfilename[:-4] + '_annotated_clustprot_groups.txt'
+			output_xtc_annotate_cluster_group = os.getcwd() + '/' + str(args.output_folder) + '/6_VMD/' + args.xtcfilename[:-4].split('/')[-1] + '_annotated_clustprot_groups.txt'
 
 	#pre-prend info to file
 	#----------------------
