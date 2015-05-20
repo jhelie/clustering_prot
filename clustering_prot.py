@@ -537,6 +537,7 @@ else:
 	os.mkdir(args.output_folder + "/4_clusters_sizes/")
 	if args.xtcfilename != "no":
 		os.mkdir(args.output_folder + "/4_clusters_sizes/4_1_plots_2D")
+		os.mkdir(args.output_folder + "/4_clusters_sizes/4_1_plots_2D/xvg")
 		os.mkdir(args.output_folder + "/4_clusters_sizes/4_1_plots_2D/png")
 		os.mkdir(args.output_folder + "/4_clusters_sizes/4_2_plots_1D")
 		os.mkdir(args.output_folder + "/4_clusters_sizes/4_2_plots_1D/png")
@@ -553,6 +554,7 @@ else:
 		os.mkdir(args.output_folder + "/5_clusters_groups")
 		if args.xtcfilename != "no":
 			os.mkdir(args.output_folder + "/5_clusters_groups/5_1_plots_2D")
+			os.mkdir(args.output_folder + "/5_clusters_groups/5_1_plots_2D/xvg")
 			os.mkdir(args.output_folder + "/5_clusters_groups/5_1_plots_2D/png")
 			os.mkdir(args.output_folder + "/5_clusters_groups/5_2_plots_1D")
 			os.mkdir(args.output_folder + "/5_clusters_groups/5_2_plots_1D/png")
@@ -3307,11 +3309,30 @@ def graph_aggregation_2D_sizes():
 	plt.close()
 			
 	return
-def write_aggregation_2D_sizes():	#TO CHECK
+def write_aggregation_2D_sizes():		#TO CHECK
 	
 	#create filenames
-	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_1_plots_2D/png/4_1_clusterprot_2D.png'
-	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_1_plots_2D/4_1_clusterprot_2D.svg'
+	filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_1_plots_2D/xvg/4_1_clusterprot_2D.stat'
+	output_stat = open(filename_stat, 'w')
+	output_stat.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
+	output_stat.write("#This data corresponds to the size of the TM cluster proteins are involved in.\n")
+	output_stat.write("#-1 correponds to an interfacial state on the lower leaflet\n")
+	output_stat.write("#99999 correponds to an interfacial state on the upper leaflet\n")	
+	output_stat.write("# -> column 0 corresponds to the simulation time in ns.\n")
+	for s_index in range(0, nb_species):
+		p_start = 1
+		for ss_index in range(0, s_index):
+			p_start += proteins_nb[proteins_species[ss_index]]
+		p_end = p_start + proteins_nb[proteins_species[s_index]]		
+		output_stat.write("# -> column " + str(int(p_start)) + " to " + str(int(p_end - 1)) + " correspond to " + str(proteins_names[proteins_species[s_index]]) + " proteins\n")
+
+	#write results
+	for f_index in range(0,nb_frames_to_process):
+		results = str(frames_time[f_index])
+		for p_index in range(0, nb_proteins):
+			results += "	" + str(proteins_size[f_index, p_index])
+		output_stat.write(results + "\n")
+	output_stat.close()
 
 	return
 
@@ -3525,7 +3546,37 @@ def graph_aggregation_2D_groups():
 	plt.close()
 			
 	return
-def write_aggregation_2D_groups():	#TO CHECK
+def write_aggregation_2D_groups():		#TO CHECK
+
+	#create filenames
+	filename_png=os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/5_1_plots_2D/png/5_1_clusterprot_2D.png'
+	filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/5_1_plots_2D/xvg/5_1_clusterprot_2D.stat'
+	output_stat = open(filename_stat, 'w')
+	output_stat.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
+	output_stat.write("#This data corresponds to the index of the cluster group size proteins are involved in.\n")
+	for g_index in range(0,groups_number):
+		if groups_boundaries[g_index][1] == 100000:
+			output_stat.write(str(g_index) + " = " + str(groups_boundaries[g_index][0]) + "+,\n")
+		else:
+			output_stat.write(str(g_index) + " = " + str(groups_boundaries[g_index][0]) + "-" + str(groups_boundaries[g_index][1]) + "\n")
+	output_stat.write("#-1 correponds to an interfacial state on the lower leaflet\n")
+	output_stat.write("#" + str(groups_number + 1) + " correponds to an interfacial state on the upper leaflet\n")	
+	output_stat.write("# -> column 0 corresponds to the simulation time in ns.\n")
+	for s_index in range(0, nb_species):
+		p_start = 1
+		for ss_index in range(0, s_index):
+			p_start += proteins_nb[proteins_species[ss_index]]
+		p_end = p_start + proteins_nb[proteins_species[s_index]]		
+		output_stat.write("# -> column " + str(int(p_start)) + " to " + str(int(p_end - 1)) + " correspond to " + str(proteins_names[proteins_species[s_index]]) + " proteins\n")
+
+	#write results
+	for f_index in range(0,nb_frames_to_process):
+		results = str(frames_time[f_index])
+		for p_index in range(0, nb_proteins):
+			results += "	" + str(proteins_group[f_index, p_index])
+		output_stat.write(results + "\n")
+	output_stat.close()
+
 	return
 
 #annotations
@@ -3983,6 +4034,8 @@ write_interactions_proteins()
 #residues interactions
 graph_interactions_residues_2D()
 graph_interactions_residues_1D()
+write_interactions_residues_2D()
+write_interactions_residues_1D()
 
 #cluster composition
 graph_clusters_comp()
@@ -4013,6 +4066,7 @@ else:
 		#to comment
 		print " -writing xvg and graphs..."
 		graph_aggregation_2D_sizes()
+		write_aggregation_2D_sizes()
 		write_xvg_biggest()
 		graph_xvg_biggest()
 		write_xvg_mostrep()
@@ -4026,6 +4080,7 @@ else:
 			write_xvg_groups()
 			graph_xvg_groups()
 			graph_aggregation_2D_groups()
+			write_aggregation_2D_groups()
 	else:
 		print "\n"
 		print "Warning: a single cluster size (", str(cluster_sizes_sampled[0]), ") was detected throughout the trajectory, maybe check the cluster detection options (see clustering_prot -h)."
