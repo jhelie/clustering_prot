@@ -3922,7 +3922,7 @@ def write_gro_interactions():
 			s1_sele = proteins_sele[s1][0]
 			tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index1], axis = 1)
 			for r_index in range(0, proteins_length[s1]):
-				s1_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s1[r_index])
+				s1_sele.selectAtoms("resnum " + str(r_index + 1)).set_bfactor(tmp_s1[r_index])
 			s1_sele.write(filename_gro, format="PDB")
 		
 		#hetero interactions
@@ -3935,7 +3935,7 @@ def write_gro_interactions():
 				s1_sele = proteins_sele[s1][0]
 				tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 1)
 				for r_index in range(0, proteins_length[s1]):
-					s1_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s1[r_index])
+					s1_sele.selectAtoms("resnum " + str(r_index + 1)).set_bfactor(tmp_s1[r_index])
 				s1_sele.write(filename_gro, format="PDB")
 				
 				#s2
@@ -3943,7 +3943,7 @@ def write_gro_interactions():
 				s2_sele = proteins_sele[s2][0]
 				tmp_s2 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 0)
 				for r_index in range(0, proteins_length[s2]):
-					s2_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s2[r_index])
+					s2_sele.selectAtoms("resnum " + str(r_index + 1)).set_bfactor(tmp_s2[r_index])
 				s2_sele.write(filename_gro, format="PDB")
 	return
 
