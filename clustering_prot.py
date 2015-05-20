@@ -2309,7 +2309,7 @@ def graph_interactions_residues_2D():
 		s1 = proteins_species[s_index1]
 		for s_index2 in range(s_index1, nb_species):
 			s2 = proteins_species[s_index2]
-			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:			
+			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:
 				#create filename
 				#---------------
 				filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_interactions_residues_' + str(proteins_names[s1]) + '-' + str(proteins_names[s2]) + '_2D.svg'
@@ -3582,8 +3582,8 @@ def write_aggregation_2D_groups():
 
 	return
 
-#annotations
-def write_frame_stat(f_nb, f_index, f_t):								#DONE
+#annotations: cluster status
+def write_frame_stat(f_nb, f_index, f_t):
 
 	#case: gro file or xtc summary
 	#=============================
@@ -3770,7 +3770,7 @@ def write_frame_stat(f_nb, f_index, f_t):								#DONE
 			output_stat.close()
 
 	return
-def write_frame_snapshot(f_index, f_t):									#DONE
+def write_frame_snapshot(f_index, f_t):
 	
 	#sizes
 	#-----
@@ -3802,7 +3802,7 @@ def write_frame_snapshot(f_index, f_t):									#DONE
 			W.write(all_atoms)
 		
 	return
-def write_frame_annotation(f_index, f_t):								#DONE
+def write_frame_annotation(f_index, f_t):
 
 	#sizes
 	#-----
@@ -3856,7 +3856,7 @@ def write_frame_annotation(f_index, f_t):								#DONE
 		output_stat.close()
 	
 	return
-def write_xtc_annotation(action):										#DONE
+def write_xtc_annotation(action):
 	
 	global output_xtc_annotate_cluster_size
 	
@@ -3908,6 +3908,43 @@ def write_xtc_annotation(action):										#DONE
 				#write data
 				f.write(tmp_data)
 
+	return
+
+#annotations: residues interactions
+def write_gro_interactions():
+	
+	for s_index1 in range(0,nb_species):
+		s1 = proteins_species[s_index1]
+		#homo interactions
+		#-----------------
+		if np.sum(proteins_ctcts_res[s_index1,s_index1]) > 0:
+			filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s1]) + '_residues_interacting_with_' + str(proteins_names[s1])
+			s1_sele = proteins_sele[s1][0]
+			tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 1)
+			for r_index in range(0, proteins_length[s1]):
+				s1_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s1[r_index])
+			s1_sele.write(filename_gro, fromat="GRO")
+		
+		#hetero interactions
+		#-------------------
+		for s_index2 in range(s_index1 + 1, nb_species):
+			s2 = proteins_species[s_index2]
+			if np.sum(proteins_ctcts_res[s_index1,s_index2]) > 0:
+				#s1
+				filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s1]) + '_residues_interacting_with_' + str(proteins_names[s2])
+				s1_sele = proteins_sele[s1][0]
+				tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 1)
+				for r_index in range(0, proteins_length[s1]):
+					s1_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s1[r_index])
+				s1_sele.write(filename_gro, fromat="GRO")
+				
+				#s2
+				filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s2]) + '_residues_interacting_with_' + str(proteins_names[s1])
+				s2_sele = proteins_sele[s2][0]
+				tmp_s2 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 0)
+				for r_index in range(0, proteins_length[s2]):
+					s2_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s2[r_index])
+				s2_sele.write(filename_gro, fromat="GRO")
 	return
 
 ##########################################################################################
