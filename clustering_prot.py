@@ -3923,7 +3923,7 @@ def write_gro_interactions():
 			tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index1], axis = 1)
 			for r_index in range(0, proteins_length[s1]):
 				s1_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s1[r_index])
-			s1_sele.write(filename_gro, format="GRO")
+			s1_sele.write(filename_gro, format="PDB")
 		
 		#hetero interactions
 		#-------------------
@@ -3936,7 +3936,7 @@ def write_gro_interactions():
 				tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 1)
 				for r_index in range(0, proteins_length[s1]):
 					s1_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s1[r_index])
-				s1_sele.write(filename_gro, format="GRO")
+				s1_sele.write(filename_gro, format="PDB")
 				
 				#s2
 				filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s2]) + '_residues_interacting_with_' + str(proteins_names[s1])
@@ -3944,7 +3944,7 @@ def write_gro_interactions():
 				tmp_s2 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 0)
 				for r_index in range(0, proteins_length[s2]):
 					s2_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s2[r_index])
-				s2_sele.write(filename_gro, format="GRO")
+				s2_sele.write(filename_gro, format="PDB")
 	return
 
 ##########################################################################################
@@ -4055,7 +4055,7 @@ calculate_statistics()
 # produce outputs
 #=========================================================================================
 print "\nWriting outputs..."
-
+print " -writing interactions xvg and graphs..."
 if pres_oligomers:
 	process_oligomers()
 
@@ -4088,9 +4088,9 @@ write_gro_interactions()
 #--------------
 if args.xtcfilename == "no":
 	if len(cluster_sizes_sampled)>1:
-		print " -writing statistics..."
+		print " -writing clustering statistics..."
 		write_frame_stat("all", 0, 0)
-		print " -writing annotated pdb..."
+		print " -writing annotated pdbs..."
 		write_frame_snapshot(0, 0)
 		write_frame_annotation(0, 0)
 	else:
@@ -4102,12 +4102,12 @@ if args.xtcfilename == "no":
 #--------------
 else:
 	if len(cluster_sizes_sampled)>1:
-		print " -writing statistics..."
+		print " -writing clustering statistics..."
 		write_frame_stat("all", 0, 0)
 		if args.buffer_size != -1:
 			write_xtc_annotation("finish")
 		#to comment
-		print " -writing xvg and graphs..."
+		print " -writing clustering xvg and graphs..."
 		graph_aggregation_2D_sizes()
 		write_aggregation_2D_sizes()
 		write_xvg_biggest()
