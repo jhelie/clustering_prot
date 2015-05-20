@@ -3920,10 +3920,10 @@ def write_gro_interactions():
 		if np.sum(proteins_ctcts_res[s_index1,s_index1]) > 0:
 			filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s1]) + '_residues_interacting_with_' + str(proteins_names[s1])
 			s1_sele = proteins_sele[s1][0]
-			tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 1)
+			tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index1], axis = 1)
 			for r_index in range(0, proteins_length[s1]):
 				s1_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s1[r_index])
-			s1_sele.write(filename_gro, fromat="GRO")
+			s1_sele.write(filename_gro, format="GRO")
 		
 		#hetero interactions
 		#-------------------
@@ -3936,7 +3936,7 @@ def write_gro_interactions():
 				tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 1)
 				for r_index in range(0, proteins_length[s1]):
 					s1_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s1[r_index])
-				s1_sele.write(filename_gro, fromat="GRO")
+				s1_sele.write(filename_gro, format="GRO")
 				
 				#s2
 				filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s2]) + '_residues_interacting_with_' + str(proteins_names[s1])
@@ -3944,7 +3944,7 @@ def write_gro_interactions():
 				tmp_s2 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 0)
 				for r_index in range(0, proteins_length[s2]):
 					s2_sele.selectAtoms("resnum " + str(r_index)).set_bfactor(tmp_s2[r_index])
-				s2_sele.write(filename_gro, fromat="GRO")
+				s2_sele.write(filename_gro, format="GRO")
 	return
 
 ##########################################################################################
@@ -4080,6 +4080,9 @@ write_interactions_residues_1D()
 #cluster composition
 graph_clusters_comp()
 write_clusters_comp()													#to test
+
+#write structures
+write_gro_interactions()
 
 #case: gro file
 #--------------
