@@ -2544,7 +2544,7 @@ def graph_interactions_residues_1D():
 				plt.close()	
 
 	return
-def write_interactions_residues_2D():	#TO CHECK
+def write_interactions_residues_2D():
 
 	for s_index1 in range(0,nb_species):
 		s1 = proteins_species[s_index1]
@@ -2565,13 +2565,13 @@ def write_interactions_residues_2D():	#TO CHECK
 			output_stat.close()
 
 	return
-def write_interactions_residues_1D():	#TO CHECK
+def write_interactions_residues_1D():
 
 	for s_index1 in range(0,nb_species):
 		s1 = proteins_species[s_index1]
 		for s_index2 in range(s_index1, nb_species):
 			s2 = proteins_species[s_index2]
-			filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/xvg/2_interactions_residues_' + str(proteins_names[s1]) + '-' + str(proteins_names[s2]) + '_1D_all.stat'
+			filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/xvg/2_interactions_residues_' + str(proteins_names[s1]) + '-' + str(proteins_names[s2]) + '_1D.stat'
 			output_stat = open(filename_stat, 'w')
 			output_stat.write("#[Residues interactions statistics - written by clustering_prot v" + str(version_nb) +"]\n")
 			output_stat.write("#This data should be loaded into a numpy array via numpy.loadtxt()\n")
@@ -2582,12 +2582,13 @@ def write_interactions_residues_1D():	#TO CHECK
 			for r1_index in range(1, proteins_length[s1]):
 				results += "	" + str(tmp_s1[r1_index])
 			output_stat.write(results + "\n")
-			output_stat.write("#" + str(proteins_names[s2]) + "residues: " + str(get_sequence(proteins_residues[s2][:proteins_length[s2]])) + ".\n")
-			tmp_s2 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 0)
-			results = str(tmp_s2[0])
-			for r2_index in range(1, proteins_length[s2]):
-				results += "	" + str(tmp_s2[r2_index])
-			output_stat.write(results + "\n")
+			if s2 != s1:
+				output_stat.write("#" + str(proteins_names[s2]) + "residues: " + str(get_sequence(proteins_residues[s2][:proteins_length[s2]])) + ".\n")
+				tmp_s2 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 0)
+				results = str(tmp_s2[0])
+				for r2_index in range(1, proteins_length[s2]):
+					results += "	" + str(tmp_s2[r2_index])
+				output_stat.write(results + "\n")
 			output_stat.close()
 
 	return
@@ -3309,15 +3310,16 @@ def graph_aggregation_2D_sizes():
 	plt.close()
 			
 	return
-def write_aggregation_2D_sizes():		#TO CHECK
+def write_aggregation_2D_sizes():
 	
 	#create filenames
 	filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_1_plots_2D/xvg/4_1_clusterprot_2D.stat'
 	output_stat = open(filename_stat, 'w')
 	output_stat.write("# [protein aggregation statistics - written by clustering_prot v" + str(version_nb) + "]\n")
 	output_stat.write("#This data corresponds to the size of the TM cluster proteins are involved in.\n")
-	output_stat.write("#-1 correponds to an interfacial state on the lower leaflet\n")
-	output_stat.write("#99999 correponds to an interfacial state on the upper leaflet\n")	
+	if args.cutoff_leaflet != "no":
+		output_stat.write("#-1 correponds to an interfacial state on the lower leaflet\n")
+		output_stat.write("#99999 correponds to an interfacial state on the upper leaflet\n")	
 	output_stat.write("# -> column 0 corresponds to the simulation time in ns.\n")
 	for s_index in range(0, nb_species):
 		p_start = 1
@@ -3546,7 +3548,7 @@ def graph_aggregation_2D_groups():
 	plt.close()
 			
 	return
-def write_aggregation_2D_groups():		#TO CHECK
+def write_aggregation_2D_groups():
 
 	#create filenames
 	filename_png=os.getcwd() + '/' + str(args.output_folder) + '/5_clusters_groups/5_1_plots_2D/png/5_1_clusterprot_2D.png'
@@ -3559,8 +3561,9 @@ def write_aggregation_2D_groups():		#TO CHECK
 			output_stat.write(str(g_index) + " = " + str(groups_boundaries[g_index][0]) + "+,\n")
 		else:
 			output_stat.write(str(g_index) + " = " + str(groups_boundaries[g_index][0]) + "-" + str(groups_boundaries[g_index][1]) + "\n")
-	output_stat.write("#-1 correponds to an interfacial state on the lower leaflet\n")
-	output_stat.write("#" + str(groups_number + 1) + " correponds to an interfacial state on the upper leaflet\n")	
+	if args.cutoff_leaflet != "no":
+		output_stat.write("#-1 correponds to an interfacial state on the lower leaflet\n")
+		output_stat.write("#" + str(groups_number + 1) + " correponds to an interfacial state on the upper leaflet\n")	
 	output_stat.write("# -> column 0 corresponds to the simulation time in ns.\n")
 	for s_index in range(0, nb_species):
 		p_start = 1
