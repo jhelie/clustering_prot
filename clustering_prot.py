@@ -1903,7 +1903,7 @@ def calculate_statistics():
 		clusters_mostrep['pc'][f_index] = tmp_mostrep_pc		
 		clusters_mostrep['size'][f_index] = tmp_mostrep_size			
 
-	#contacts between prots
+	#contacts between prots (normalised to 1)
 	#----------------------
 	#for each protein normalise the number of contacts with other proteins byt the total number of contacts formed by this protein
 	#this breaks the symmetry
@@ -1912,7 +1912,7 @@ def calculate_statistics():
 		if tmp_sum > 0:
 			proteins_ctcts_prot[:,p_index] /= float(tmp_sum)
 	
-	#contacts between residues
+	#contacts between residues (%)
 	#-------------------------
 	#for each pair of proteins normalise the number of contacts between pair of residues by the total number of contacts over all residues
 	for s_index1 in range(0,nb_species):
@@ -2104,7 +2104,7 @@ def write_proteins_neighbours():
 	#--------------
 	if args.xtcfilename == "no":
 
-		filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_proteins_neighbours.stat'
+		filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/xvg/2_proteins_neighbours.stat'
 		output_stat = open(filename_stat, 'w')
 		output_stat.write("[Number of neighbours of proteins - written by clustering_prot v" + str(version_nb) +"]\n")
 		output_stat.write("\n")
@@ -2280,7 +2280,7 @@ def graph_interactions_proteins():
 	return
 def write_interactions_proteins():
 
-	filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/2_proteins_interactions.stat'
+	filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/xvg/2_proteins_interactions.stat'
 	output_stat = open(filename_stat, 'w')
 	output_stat.write("#[Protein contacts statistics - written by clustering_prot v" + str(version_nb) +"]\n")
 	output_stat.write("#This data should be loaded into a numpy array via numpy.loadtxt()\n")
@@ -2291,7 +2291,7 @@ def write_interactions_proteins():
 		for ss_index in range(0, s_index):
 			p_start += proteins_nb[proteins_species[ss_index]]
 		p_end = p_start + proteins_nb[proteins_species[s_index]]		
-		output_stat.write("#" + str(int(p_start)) + " to " + str(int(p_end - 1)) + ": " + str(proteins_names[proteins_species[s_index]]) + "\n")
+		output_stat.write("#column " + str(int(p_start)) + " to " + str(int(p_end - 1)) + ": " + str(proteins_names[proteins_species[s_index]]) + "\n")
 	for p_index in range(0, nb_proteins):
 		results = str(round(proteins_ctcts_prot[p_index, 0], 2))
 		for pp_index in range(1, nb_proteins):
@@ -2540,6 +2540,53 @@ def graph_interactions_residues_1D():
 				#save figure
 				fig.savefig(filename_svg)
 				plt.close()	
+
+	return
+def write_interactions_residues_2D():	#TO CHECK
+
+	for s_index1 in range(0,nb_species):
+		s1 = proteins_species[s_index1]
+		for s_index2 in range(s_index1, nb_species):
+			s2 = proteins_species[s_index2]
+			filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/xvg/2_interactions_residues_' + str(proteins_names[s1]) + '-' + str(proteins_names[s2]) + '_2D.stat'
+			output_stat = open(filename_stat, 'w')
+			output_stat.write("#[Residues interactions statistics - written by clustering_prot v" + str(version_nb) +"]\n")
+			output_stat.write("#This data should be loaded into a numpy array via numpy.loadtxt()\n")
+			output_stat.write("#The data represent the % of total interactions between " + str(proteins_names[s1]) + " and " + str(proteins_names[s2]) + " accounted for by each pair of residues\n")
+			output_stat.write("#rows (y axis) correspond to " + str(proteins_names[s1]) + "residues: " + str(get_sequence(proteins_residues[s1][:proteins_length[s1]])) + ".\n")
+			output_stat.write("#columns (x axis) correspond to " + str(proteins_names[s2]) + "residues: " + str(get_sequence(proteins_residues[s1][:proteins_length[s1]])) + ".\n")
+			for r1_index in range(0, proteins_length[s1]):
+				results = str(proteins_ctcts_res[s_index1, s_index2][r1_index, 0])
+				for r2_index in range(1, proteins_length[s2]):
+					results += "	" + str(proteins_ctcts_res[s_index1, s_index2][r1_index, r2_index])
+				output_stat.write(results + "\n")
+			output_stat.close()
+
+	return
+def write_interactions_residues_1D():	#TO CHECK
+
+	for s_index1 in range(0,nb_species):
+		s1 = proteins_species[s_index1]
+		for s_index2 in range(s_index1, nb_species):
+			s2 = proteins_species[s_index2]
+			filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/xvg/2_interactions_residues_' + str(proteins_names[s1]) + '-' + str(proteins_names[s2]) + '_1D_all.stat'
+			output_stat = open(filename_stat, 'w')
+			output_stat.write("#[Residues interactions statistics - written by clustering_prot v" + str(version_nb) +"]\n")
+			output_stat.write("#This data should be loaded into a numpy array via numpy.loadtxt()\n")
+			output_stat.write("#The data represent the % of total interactions between " + str(proteins_names[s1]) + " and " + str(proteins_names[s2]) + " accounted for by each residue.\n")
+			output_stat.write("#" + str(proteins_names[s1]) + "residues: " + str(get_sequence(proteins_residues[s1][:proteins_length[s1]])) + ".\n")
+			tmp_s1 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 1)
+			results = str(tmp_s1[0])
+			for r1_index in range(1, proteins_length[s1]):
+				results += "	" + str(tmp_s1[r1_index])
+			output_stat.write(results + "\n")
+			output_stat.write("#" + str(proteins_names[s2]) + "residues: " + str(get_sequence(proteins_residues[s2][:proteins_length[s2]])) + ".\n")
+			tmp_s2 = np.sum(proteins_ctcts_res[s_index1,s_index2], axis = 0)
+			results = str(tmp_s2[0])
+			for r2_index in range(1, proteins_length[s2]):
+				results += "	" + str(tmp_s2[r2_index])
+			output_stat.write(results + "\n")
+			output_stat.close()
 
 	return
 
@@ -3260,6 +3307,13 @@ def graph_aggregation_2D_sizes():
 	plt.close()
 			
 	return
+def write_aggregation_2D_sizes():	#TO CHECK
+	
+	#create filenames
+	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_1_plots_2D/png/4_1_clusterprot_2D.png'
+	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/4_clusters_sizes/4_1_plots_2D/4_1_clusterprot_2D.svg'
+
+	return
 
 #evolution clustering: groups
 def write_xvg_groups():													
@@ -3470,6 +3524,8 @@ def graph_aggregation_2D_groups():
 	fig.savefig(filename_svg, transparent = True)
 	plt.close()
 			
+	return
+def write_aggregation_2D_groups():	#TO CHECK
 	return
 
 #annotations
