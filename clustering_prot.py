@@ -4055,7 +4055,7 @@ calculate_statistics()
 # produce outputs
 #=========================================================================================
 print "\nWriting outputs..."
-print " -writing interactions xvg and graphs..."
+print " -writing interaction xvg and graphs..."
 if pres_oligomers:
 	process_oligomers()
 
