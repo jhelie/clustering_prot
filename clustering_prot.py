@@ -2008,8 +2008,8 @@ def calculate_statistics():
 		tmp_M2 = np.zeros((groups_gmax, nb_species))
 		for c_index in range(0, len(cluster_sizes_sampled)):
 			c_size = cluster_sizes_sampled[c_index]
-			g_index = groups_sizes_dict[c_size]
-			if g_index != -1 and g_index != groups_number + 1:
+			if c_size != -1 and c_size != 99999:
+				g_index = groups_sizes_dict[c_size]
 				for comp, nb in clusters_comp[c_size].items():
 					for n in range(0, nb):
 						for s_index in range(0, nb_species):
