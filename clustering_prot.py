@@ -1654,7 +1654,7 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 		elif np.size(dist[dist>0]) == 0:
 			proteins_size[f_index, cluster] = 99999
 			if args.cluster_groups_file != "no":
-				proteins_group[f_index, cluster] = groups_number + 1			
+				proteins_group[f_index, cluster] = groups_number + 1
 		
 		#case: TM
 		#--------
@@ -1983,18 +1983,19 @@ def calculate_statistics():
 		tmp_n = np.zeros(nb_species)
 		tmp_mean = np.zeros(nb_species)
 		tmp_M2 = np.zeros(nb_species)
-		for comp, nb in clusters_comp[c_size].items():
-			for n in range(0, nb):
-				for s_index in range(0, nb_species):
-					tmp_n[s_index] += 1
-					delta = comp[s_index]/float(c_size) - tmp_mean[s_index]
-					tmp_mean[s_index] += delta/float(tmp_n[s_index])
-					tmp_M2[s_index] += delta * (comp[s_index]/float(c_size)  - tmp_mean[s_index])
+		if c_size != -1 and c_size != 99999:
+			for comp, nb in clusters_comp[c_size].items():
+				for n in range(0, nb):
+					for s_index in range(0, nb_species):
+						tmp_n[s_index] += 1
+						delta = comp[s_index]/float(c_size) - tmp_mean[s_index]
+						tmp_mean[s_index] += delta/float(tmp_n[s_index])
+						tmp_M2[s_index] += delta * (comp[s_index]/float(c_size)  - tmp_mean[s_index])
 		
-		for s_index in range(0, nb_species):
-			clusters_comp_avg[c_index, :] = tmp_mean * 100
-			if tmp_n[s_index] > 0:
-				clusters_comp_std[c_index,:] = np.sqrt(tmp_M2[s_index] / float(tmp_n[s_index])) * 100
+			for s_index in range(0, nb_species):
+				clusters_comp_avg[c_index, :] = tmp_mean * 100
+				if tmp_n[s_index] > 0:
+					clusters_comp_std[c_index,:] = np.sqrt(tmp_M2[s_index] / float(tmp_n[s_index])) * 100
 
 	#by group
 	if args.cluster_groups_file != "no":
@@ -2008,13 +2009,14 @@ def calculate_statistics():
 		for c_index in range(0, len(cluster_sizes_sampled)):
 			c_size = cluster_sizes_sampled[c_index]
 			g_index = groups_sizes_dict[c_size]
-			for comp, nb in clusters_comp[c_size].items():
-				for n in range(0, nb):
-					for s_index in range(0, nb_species):
-						tmp_n[g_index, s_index] += 1						
-						delta = comp[s_index]/float(c_size) - tmp_mean[g_index, s_index]
-						tmp_mean[g_index, s_index] += delta/float(tmp_n[g_index, s_index])
-						tmp_M2[g_index, s_index] += delta * (comp[s_index]/float(c_size)  - tmp_mean[g_index, s_index])
+			if g_index != -1 and g_index != groups_number + 1:
+				for comp, nb in clusters_comp[c_size].items():
+					for n in range(0, nb):
+						for s_index in range(0, nb_species):
+							tmp_n[g_index, s_index] += 1						
+							delta = comp[s_index]/float(c_size) - tmp_mean[g_index, s_index]
+							tmp_mean[g_index, s_index] += delta/float(tmp_n[g_index, s_index])
+							tmp_M2[g_index, s_index] += delta * (comp[s_index]/float(c_size)  - tmp_mean[g_index, s_index])
 			
 		for g_index in cluster_groups_sampled_TM:
 			for s_index in range(0, nb_species):
