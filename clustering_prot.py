@@ -440,56 +440,55 @@ elif not os.path.isfile(args.xtcfilename):
 	print "Error: file " + str(args.xtcfilename) + " not found."
 	sys.exit(1)
 
-if args.m_algorithm == "cog":
-	try:
-		args.nx_cutoff	= float(args.nx_cutoff)
-	except:
-		if not os.path.isfile(args.nx_cutoff):
-			print "Error: the --nx_cutoff should either be a float or a text file, see note 7."
-			sys.exit(1)
-		else:
-			print "\nReading cog cutoffs definition file..."
-			nx_cutoff_file = True
-			s_indices = []
-			with open(args.nx_cutoff) as f:
-				lines = f.readlines()
-			for l_index in range(0, len(lines)):
-				#get line content
-				line = lines[l_index]
-				if line[-1] == "\n":
-					line = line[:-1]
-				l_content = line.split(',')
-				
-				#check line format
-				if len(l_content) != 3:
-					print "Error: the format of line " + str(l_index+1) + " is incorrect, see clustering_prot --help, note 7."
-					print "->", line
-					sys.exit(1)
-				else:
-					#store cutoffs 
-					s1_index = int(l_content[0])
-					s2_index = int(l_content[1])
-					s1s2_cutoff = float(l_content[2])
-					cog_cutoff_values[s1_index, s2_index] = s1s2_cutoff
-					cog_cutoff_values[s2_index, s1_index] = s1s2_cutoff
-
-					#store list of indices
-					s_indices.append(s1_index)
-					s_indices.append(s2_index)
+try:
+	args.nx_cutoff	= float(args.nx_cutoff)
+except:
+	if not os.path.isfile(args.nx_cutoff):
+		print "Error: the --nx_cutoff should either be a float or a text file, see note 7."
+		sys.exit(1)
+	else:
+		print "\nReading cog cutoffs definition file..."
+		nx_cutoff_file = True
+		s_indices = []
+		with open(args.nx_cutoff) as f:
+			lines = f.readlines()
+		for l_index in range(0, len(lines)):
+			#get line content
+			line = lines[l_index]
+			if line[-1] == "\n":
+				line = line[:-1]
+			l_content = line.split(',')
 			
-			#check there's no gap
-			s_indices_unique = np.unique(s_indices)
-			if min(s_indices_unique) != 0:
-				print "Error: species indexing should start at 0."
+			#check line format
+			if len(l_content) != 3:
+				print "Error: the format of line " + str(l_index+1) + " is incorrect, see clustering_prot --help, note 7."
+				print "->", line
 				sys.exit(1)
-			if max(s_indices_unique) >= len(s_indices_unique):
-				print "Error: cutoff not specified for all species."
-				sys.exit(1)
-			for s_index in range(0, len(s_indices_unique)):
-				for ss_index in range(0, len(s_indices_unique)):
-					if (s_index, ss_index) not in cog_cutoff_values.keys():
-						print "Error: cutoff not specified for all species."
-						sys.exit(1)
+			else:
+				#store cutoffs 
+				s1_index = int(l_content[0])
+				s2_index = int(l_content[1])
+				s1s2_cutoff = float(l_content[2])
+				cog_cutoff_values[s1_index, s2_index] = s1s2_cutoff
+				cog_cutoff_values[s2_index, s1_index] = s1s2_cutoff
+
+				#store list of indices
+				s_indices.append(s1_index)
+				s_indices.append(s2_index)
+		
+		#check there's no gap
+		s_indices_unique = np.unique(s_indices)
+		if min(s_indices_unique) != 0:
+			print "Error: species indexing should start at 0."
+			sys.exit(1)
+		if max(s_indices_unique) >= len(s_indices_unique):
+			print "Error: cutoff not specified for all species."
+			sys.exit(1)
+		for s_index in range(0, len(s_indices_unique)):
+			for ss_index in range(0, len(s_indices_unique)):
+				if (s_index, ss_index) not in cog_cutoff_values.keys():
+					print "Error: cutoff not specified for all species."
+					sys.exit(1)
 					
 if args.m_algorithm != "density":
 	if '--db_radius' in sys.argv:
@@ -1370,26 +1369,28 @@ def struct_proteins():
 #=========================================================================================
 
 def get_distances(box_dim):
-	
-	#method: use minimum distance between proteins						#TO DO
+		
+	#method: use minimum distance between proteins
 	#---------------------------------------------
 	if args.m_algorithm == "min":
 		#pre-process: get protein coordinates
 		tmp_proteins_coords = {}
 		for p_index in range(0, nb_proteins):
-			tmp_proteins_coords[p_index] = coords_remove_whole(proteins_sele[prot_index2sindex[p_index]][prot_index2rel[p_index]].coordinates(), box_dim)
+			tmp_proteins_coords[p_index] = coords_remove_whole(proteins_sele[prot_index2specie[p_index]][prot_index2rel[p_index]].coordinates(), box_dim)
 
 		#store min distance between each proteins
 		dist_matrix = 100000 * np.ones((nb_proteins, nb_proteins))
 		for n in range(nb_proteins, 1, -1):
-			dist_matrix[nb_proteins-n,nb_proteins-n+1:nb_proteins] = map(lambda pp: np.min(MDAnalysis.analysis.distances.distance_array(np.float32(tmp_proteins_coords[proteins_nb-n]), np.float32(tmp_proteins_coords[pp]), box_dim)), range(nb_proteins-n+1,nb_proteins))
+			dist_matrix[nb_proteins-n,nb_proteins-n+1:nb_proteins] = map(lambda pp: np.min(MDAnalysis.analysis.distances.distance_array(np.float32(tmp_proteins_coords[nb_proteins-n]), np.float32(tmp_proteins_coords[pp]), box_dim)), range(nb_proteins-n+1,nb_proteins))
 			dist_matrix[nb_proteins-n+1:nb_proteins,nb_proteins-n] = dist_matrix[nb_proteins-n,nb_proteins-n+1:nb_proteins]
-											
+		
 	#method: use distance between cog
 	#--------------------------------
 	else:
 		tmp_proteins_cogs = np.asarray(map(lambda p_index: calculate_cog(coords_remove_whole(proteins_sele[prot_index2specie[p_index]][prot_index2rel[p_index]].coordinates(), box_dim), box_dim), range(0,nb_proteins)))
 		dist_matrix = MDAnalysis.analysis.distances.distance_array(np.float32(tmp_proteins_cogs), np.float32(tmp_proteins_cogs), box_dim)
+		#remove self-connections
+		np.fill_diagonal(dist_matrix, 100000)
 
 	return dist_matrix
 def coords_remove_whole(coords, box_dim):
@@ -1461,7 +1462,7 @@ def detect_clusters_connectivity(dist, box_dim):
 	#same cutoff for everyone:
 	#-------------------------
 	else:
-		connected = (dist < args.nx_cutoff)
+		connected = dist < float(args.nx_cutoff)
 	
 	network = nx.Graph(connected)
 	
@@ -1681,9 +1682,8 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 				#update number of each protein specie in the cluster
 				tmp_comp[p_s_index] += 1
 
-				#retrieve neighbours of current protein (remove itself)
+				#retrieve neighbours of current protein
 				tmp_neighb = network.neighbors(p_index)
-				tmp_neighb.remove(p_index)
 				
 				#browse neighbours of current protein
 				for pp_index in tmp_neighb:
