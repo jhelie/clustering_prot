@@ -1215,7 +1215,7 @@ def initialise_groups():
 		tmp_end = l_content[1]
 		colours_groups_dict[g_index] = l_content[2]						#attribute colour to group
 		if l_content[2] not in colormaps_possible:	
-			colours_groups_list.append(groups_colors_value[g_index])
+			colours_groups_list.append(colours_groups_dict[g_index])
 		if tmp_end == "max":
 			tmp_end = 100000											#put a stupidly big size to cap the open ended group
 		else:
