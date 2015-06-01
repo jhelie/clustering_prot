@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.6"
+version_nb = "0.0.7"
 parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter, description=\
 '''
 **********************************************
@@ -641,7 +641,7 @@ def set_proteins_database():
 		print "\nReading species definition file..."
 		with open(args.species_file) as f:
 			lines = f.readlines()
-		print ' -found ' + str(len(lines)) + ' species defintion'
+		print ' -found ' + str(len(lines)) + ' species definition'
 		nb_lines = len(lines)
 		for l_index in range(0,nb_lines):
 			#get current line
@@ -1487,7 +1487,7 @@ def process_clusters(network, f_index, f_nb):
 	global vmd_cluster_size
 	global proteins_ctcts_prot
 	
-	clusters = nx.connected_components(network)
+	clusters = sorted(nx.connected_components(network))
 	nb_clusters = len(clusters)
 	c_counter = 0
 	
@@ -1605,7 +1605,7 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 	global vmd_cluster_size
 	global proteins_ctcts_prot
 	
-	clusters = nx.connected_components(network)
+	clusters = sorted(nx.connected_components(network))
 	nb_clusters = len(clusters)
 	c_counter = 0
 	tmp_lip_coords = {l: coords_remove_whole(leaflet_sele[l].coordinates(), box_dim) for l in ["lower","upper"]}
