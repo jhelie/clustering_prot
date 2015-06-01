@@ -1488,6 +1488,10 @@ def process_clusters(network, f_index, f_nb):
 	global proteins_ctcts_prot
 	
 	clusters = nx.connected_components(network)
+
+	#debug
+	print clusters
+
 	nb_clusters = len(clusters)
 	c_counter = 0
 	
