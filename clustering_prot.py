@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.5"
+version_nb = "0.0.6"
 parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter, description=\
 '''
 **********************************************
@@ -1528,7 +1528,6 @@ def process_clusters(network, f_index, f_nb):
 
 			#retrieve neighbours of current protein (remove itself)
 			tmp_neighb = network.neighbors(p_index)
-			tmp_neighb.remove(p_index)
 			
 			#browse neighbours of current protein
 			for pp_index in tmp_neighb:
