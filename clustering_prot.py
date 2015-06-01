@@ -1526,7 +1526,7 @@ def process_clusters(network, f_index, f_nb):
 			#update number of each protein specie in the cluster
 			tmp_comp[p_s_index] += 1
 
-			#retrieve neighbours of current protein (remove itself)
+			#retrieve neighbours of current protein
 			tmp_neighb = network.neighbors(p_index)
 			
 			#browse neighbours of current protein
