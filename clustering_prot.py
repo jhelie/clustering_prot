@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.6"
+version_nb = "0.0.6a"
 parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter, description=\
 '''
 **********************************************
@@ -1488,10 +1488,6 @@ def process_clusters(network, f_index, f_nb):
 	global proteins_ctcts_prot
 	
 	clusters = nx.connected_components(network)
-
-	#debug
-	print clusters
-
 	nb_clusters = len(clusters)
 	c_counter = 0
 	
@@ -4023,7 +4019,7 @@ if args.xtcfilename == "no":
 	box_dim = U.dimensions
 
 	#detect clusters
-	if args.m_algorithm != "density":
+	if args.m_algorithm != "density":	
 		clusters = detect_clusters_connectivity(get_distances(box_dim), box_dim)
 	else:
 		clusters = detect_clusters_density(get_distances(box_dim), box_dim)
@@ -4050,6 +4046,8 @@ else:
 
 		#detect clusters
 		if args.m_algorithm != "density":
+			#debug
+			print "toto1"
 			clusters = detect_clusters_connectivity(get_distances(box_dim), box_dim)
 		else:
 			clusters = detect_clusters_density(get_distances(box_dim), box_dim)
