@@ -1369,7 +1369,7 @@ def struct_proteins():
 		proteins_ctcts_res_lip_group[s_index1] = {}
 		if args.cluster_groups_file != "no":
 			for g_index in range(0, groups_number):
-				proteins_ctcts_res_lip_group[s_index1][g_index] = np.zeros(proteins_length[proteins_species[s_index]])
+				proteins_ctcts_res_lip_group[s_index1][g_index] = np.zeros(proteins_length[proteins_species[s_index1]])
 		for s_index2 in range(s_index1, nb_species):
 			proteins_ctcts_res_size[s_index1, s_index2] = {}
 			proteins_ctcts_res_group[s_index1, s_index2] = {}
@@ -2022,13 +2022,30 @@ def calculate_statistics():
 	#for each pair of proteins normalise the number of contacts between pair of residues by the total number of contacts over all residues
 	for s_index1 in range(0,nb_species):
 		for s_index2 in range(s_index1, nb_species):
+			#by size
 			for c_size in proteins_ctcts_res_size[s_index1,s_index2].keys():
 				if np.sum(proteins_ctcts_res_size[s_index1,s_index2][c_size]) > 0:				
 					proteins_ctcts_res_size[s_index1,s_index2][c_size] = proteins_ctcts_res_size[s_index1,s_index2][c_size] / float(np.sum(proteins_ctcts_res_size[s_index1,s_index2][c_size])) * 100
+			#by group
 			if args.cluster_groups_file != "no":
 				for g_index in range(0, groups_number):
 					if np.sum(proteins_ctcts_res_group[s_index1,s_index2][g_index]) > 0:				
 						proteins_ctcts_res_group[s_index1,s_index2][g_index] = proteins_ctcts_res_group[s_index1,s_index2][g_index] / float(np.sum(proteins_ctcts_res_group[s_index1,s_index2][g_index])) * 100
+
+	#interaction with lipids (%)
+	#-----------------------
+	#for each protein specie normalise the number of contacts between residues and leaflet beads by the total number of contacts over all residues
+	if args.cutoff_leaflet != "no":
+		for s_index1 in range(0,nb_species):
+			#by size
+			for c_size in proteins_ctcts_res_lip_size[s_index1].keys():
+				if np.sum(proteins_ctcts_res_lip_size[s_index1][c_size]) > 0:
+					proteins_ctcts_res_lip_size[s_index1][c_size] = proteins_ctcts_res_lip_size[s_index1][c_size] / float(np.sum(proteins_ctcts_res_lip_size[s_index1][c_size])) * 100
+			#by group
+			if args.cluster_groups_file != "no":
+				for g_index in range(0, groups_number):
+					if np.sum(proteins_ctcts_res_lip_group[s_index1][g_index]) > 0:
+						proteins_ctcts_res_lip_group[s_index1][g_index] = proteins_ctcts_res_lip_group[s_index1][g_index] / float(np.sum(proteins_ctcts_res_lip_group[s_index1][g_index])) * 100
 
 	#neighbours of proteins
 	#----------------------
@@ -2767,7 +2784,7 @@ def write_interactions_residues_2D():
 		for s_index2 in range(s_index1, nb_species):
 			s2 = proteins_species[s_index2]
 			#by size
-			for c_size in proteins_ctcts_res_size.keys():
+			for c_size in proteins_ctcts_res_size[s_index1, s_index2].keys():
 				filename_stat = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/xvg/2_interactions_residues_' + str(proteins_names[s1]) + '-' + str(proteins_names[s2]) + '_2D_size' + str(c_size) + '.stat'
 				output_stat = open(filename_stat, 'w')
 				output_stat.write("#[Residues interactions statistics - written by clustering_prot v" + str(version_nb) +"]\n")
@@ -4218,7 +4235,7 @@ def write_gro_interactions():
 
 		#interaction with lipids
 		#-----------------------
-		if args.cutoff_leaflet == "no":
+		if args.cutoff_leaflet != "no":
 			#by size
 			for c_size in proteins_ctcts_res_lip_size[s_index1].keys():
 				if np.sum(proteins_ctcts_res_lip_size[s_index1][c_size]) > 0:
