@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.8"
+version_nb = "0.0.9"
 parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter, description=\
 '''
 **********************************************
@@ -1364,12 +1364,19 @@ def struct_proteins():
 	proteins_ctcts_res_group = {}
 	proteins_ctcts_res_lip_size = {}
 	proteins_ctcts_res_lip_group = {}
+	proteins_ctcts_res_lip_size["upper"] = {}
+	proteins_ctcts_res_lip_size["lower"] = {}
+	proteins_ctcts_res_lip_group["upper"] = {}
+	proteins_ctcts_res_lip_group["lower"] = {}
 	for s_index1 in range(0,nb_species):
-		proteins_ctcts_res_lip_size[s_index1] = {}
-		proteins_ctcts_res_lip_group[s_index1] = {}
+		proteins_ctcts_res_lip_size["upper"][s_index1] = {}
+		proteins_ctcts_res_lip_size["lower"][s_index1] = {}
+		proteins_ctcts_res_lip_group["upper"][s_index1] = {}
+		proteins_ctcts_res_lip_group["lower"][s_index1] = {}
 		if args.cluster_groups_file != "no":
 			for g_index in range(0, groups_number):
-				proteins_ctcts_res_lip_group[s_index1][g_index] = np.zeros(proteins_length[proteins_species[s_index1]])
+				proteins_ctcts_res_lip_group["upper"][s_index1][g_index] = np.zeros(proteins_length[proteins_species[s_index1]])
+				proteins_ctcts_res_lip_group["lower"][s_index1][g_index] = np.zeros(proteins_length[proteins_species[s_index1]])
 		for s_index2 in range(s_index1, nb_species):
 			proteins_ctcts_res_size[s_index1, s_index2] = {}
 			proteins_ctcts_res_group[s_index1, s_index2] = {}
@@ -1695,20 +1702,26 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 				for r in proteins_sele[p_specie][prot_index2rel[p_index]].residues:
 					p_res_cog.append(r.centroid())
 				
-				#contacts of residues with phosphate
-				dist_p_lower_matrix = MDAnalysis.analysis.distances.distance_array(np.asarray(p_res_cog), tmp_lip_coords["lower"], box_dim)
+				#contacts of residues with phosphate: upper
 				dist_p_upper_matrix = MDAnalysis.analysis.distances.distance_array(np.asarray(p_res_cog), tmp_lip_coords["upper"], box_dim)
-				pop_lower = np.zeros((proteins_length[proteins_species[p_s_index]], nb_lip_lower))
 				pop_upper = np.zeros((proteins_length[proteins_species[p_s_index]], nb_lip_upper))
-				pop_lower[dist_p_lower_matrix < args.res_contact] += 1
 				pop_upper[dist_p_upper_matrix < args.res_contact] += 1
-				if c_size not in proteins_ctcts_res_lip_size[p_s_index].keys():
-					proteins_ctcts_res_lip_size[p_s_index][c_size] = np.zeros(proteins_length[proteins_species[p_s_index]])
-				proteins_ctcts_res_lip_size[p_s_index][c_size] += np.sum(pop_lower, axis = 1)
-				proteins_ctcts_res_lip_size[p_s_index][c_size] += np.sum(pop_upper, axis = 1)
+				if c_size not in proteins_ctcts_res_lip_size["upper"][p_s_index].keys():
+					proteins_ctcts_res_lip_size["upper"][p_s_index][c_size] = np.zeros(proteins_length[proteins_species[p_s_index]])
+				proteins_ctcts_res_lip_size["upper"][p_s_index][c_size] += np.sum(pop_upper, axis = 1)
+
+				#contacts of residues with phosphate: lower
+				dist_p_lower_matrix = MDAnalysis.analysis.distances.distance_array(np.asarray(p_res_cog), tmp_lip_coords["lower"], box_dim)
+				pop_lower = np.zeros((proteins_length[proteins_species[p_s_index]], nb_lip_lower))
+				pop_lower[dist_p_lower_matrix < args.res_contact] += 1
+				if c_size not in proteins_ctcts_res_lip_size["lower"][p_s_index].keys():
+					proteins_ctcts_res_lip_size["lower"][p_s_index][c_size] = np.zeros(proteins_length[proteins_species[p_s_index]])
+				proteins_ctcts_res_lip_size["lower"][p_s_index][c_size] += np.sum(pop_lower, axis = 1)
+
+				#contacts of residues with phosphate: upper and lower groups
 				if args.cluster_groups_file != "no":
-					proteins_ctcts_res_lip_group[p_s_index][groups_sizes_dict[c_size]] += np.sum(pop_lower, axis = 1)
-					proteins_ctcts_res_lip_group[p_s_index][groups_sizes_dict[c_size]] += np.sum(pop_upper, axis = 1)
+					proteins_ctcts_res_lip_group["upper"][p_s_index][groups_sizes_dict[c_size]] += np.sum(pop_upper, axis = 1)
+					proteins_ctcts_res_lip_group["lower"][p_s_index][groups_sizes_dict[c_size]] += np.sum(pop_lower, axis = 1)
 				
 				#update number of each protein specie in the cluster
 				tmp_comp[p_s_index] += 1
@@ -2038,14 +2051,24 @@ def calculate_statistics():
 	if args.cutoff_leaflet != "no":
 		for s_index1 in range(0,nb_species):
 			#by size
-			for c_size in proteins_ctcts_res_lip_size[s_index1].keys():
-				if np.sum(proteins_ctcts_res_lip_size[s_index1][c_size]) > 0:
-					proteins_ctcts_res_lip_size[s_index1][c_size] = proteins_ctcts_res_lip_size[s_index1][c_size] / float(np.sum(proteins_ctcts_res_lip_size[s_index1][c_size])) * 100
+			#upper
+			for c_size in proteins_ctcts_res_lip_size["upper"][s_index1].keys():
+				if np.sum(proteins_ctcts_res_lip_size["upper"][s_index1][c_size]) > 0:
+					proteins_ctcts_res_lip_size["upper"][s_index1][c_size] = proteins_ctcts_res_lip_size["upper"][s_index1][c_size] / float(np.sum(proteins_ctcts_res_lip_size["upper"][s_index1][c_size])) * 100
+			#lower
+			for c_size in proteins_ctcts_res_lip_size["lower"][s_index1].keys():
+				if np.sum(proteins_ctcts_res_lip_size["lower"][s_index1][c_size]) > 0:
+					proteins_ctcts_res_lip_size["lower"][s_index1][c_size] = proteins_ctcts_res_lip_size["lower"][s_index1][c_size] / float(np.sum(proteins_ctcts_res_lip_size["lower"][s_index1][c_size])) * 100
+			
 			#by group
 			if args.cluster_groups_file != "no":
 				for g_index in range(0, groups_number):
-					if np.sum(proteins_ctcts_res_lip_group[s_index1][g_index]) > 0:
-						proteins_ctcts_res_lip_group[s_index1][g_index] = proteins_ctcts_res_lip_group[s_index1][g_index] / float(np.sum(proteins_ctcts_res_lip_group[s_index1][g_index])) * 100
+					#upper
+					if np.sum(proteins_ctcts_res_lip_group["upper"][s_index1][g_index]) > 0:
+						proteins_ctcts_res_lip_group["upper"][s_index1][g_index] = proteins_ctcts_res_lip_group["upper"][s_index1][g_index] / float(np.sum(proteins_ctcts_res_lip_group["upper"][s_index1][g_index])) * 100
+					#lower
+					if np.sum(proteins_ctcts_res_lip_group["lower"][s_index1][g_index]) > 0:
+						proteins_ctcts_res_lip_group["lower"][s_index1][g_index] = proteins_ctcts_res_lip_group["lower"][s_index1][g_index] / float(np.sum(proteins_ctcts_res_lip_group["lower"][s_index1][g_index])) * 100
 
 	#neighbours of proteins
 	#----------------------
@@ -4237,21 +4260,38 @@ def write_gro_interactions():
 		#-----------------------
 		if args.cutoff_leaflet != "no":
 			#by size
-			for c_size in proteins_ctcts_res_lip_size[s_index1].keys():
-				if np.sum(proteins_ctcts_res_lip_size[s_index1][c_size]) > 0:
-					filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s1]) + '_residues_interacting_with_lipids_beads_size' + str(c_size)
+			#upper
+			for c_size in proteins_ctcts_res_lip_size["upper"][s_index1].keys():
+				if np.sum(proteins_ctcts_res_lip_size["upper"][s_index1][c_size]) > 0:
+					filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s1]) + '_residues_interacting_with_upper_lipids_beads_size' + str(c_size)
 					s1_sele = proteins_sele[s1][0]
 					for r_index in range(0, proteins_length[s1]):
-						s1_sele.selectAtoms("resnum " + str(r_index + 1)).set_bfactor(proteins_ctcts_res_lip_size[s_index1][c_size][r_index])
+						s1_sele.selectAtoms("resnum " + str(r_index + 1)).set_bfactor(proteins_ctcts_res_lip_size["upper"][s_index1][c_size][r_index])
+					s1_sele.write(filename_gro, format="PDB")
+			#lower
+			for c_size in proteins_ctcts_res_lip_size["lower"][s_index1].keys():
+				if np.sum(proteins_ctcts_res_lip_size["lower"][s_index1][c_size]) > 0:
+					filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s1]) + '_residues_interacting_with_lower_lipids_beads_size' + str(c_size)
+					s1_sele = proteins_sele[s1][0]
+					for r_index in range(0, proteins_length[s1]):
+						s1_sele.selectAtoms("resnum " + str(r_index + 1)).set_bfactor(proteins_ctcts_res_lip_size["lower"][s_index1][c_size][r_index])
 					s1_sele.write(filename_gro, format="PDB")
 			#by group
 			if args.cluster_groups_file != "no":
 				for g_index in range(0, groups_number):
-					if np.sum(proteins_ctcts_res_lip_group[s_index1][g_index]) > 0:
-						filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s1]) + '_residues_interacting_with_lipids_beads_size_g' + groups_labels[g_index]
+					#upper
+					if np.sum(proteins_ctcts_res_lip_group["upper"][s_index1][g_index]) > 0:
+						filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s1]) + '_residues_interacting_with_upper_lipids_beads_size_g' + groups_labels[g_index]
 						s1_sele = proteins_sele[s1][0]
 						for r_index in range(0, proteins_length[s1]):
-							s1_sele.selectAtoms("resnum " + str(r_index + 1)).set_bfactor(proteins_ctcts_res_lip_group[s_index1][g_index][r_index])
+							s1_sele.selectAtoms("resnum " + str(r_index + 1)).set_bfactor(proteins_ctcts_res_lip_group["upper"][s_index1][g_index][r_index])
+						s1_sele.write(filename_gro, format="PDB")
+					#lower
+					if np.sum(proteins_ctcts_res_lip_group["lower"][s_index1][g_index]) > 0:
+						filename_gro = os.getcwd() + '/' + str(args.output_folder) + '/2_proteins_interactions/' + str(proteins_names[s1]) + '_residues_interacting_with_lower_lipids_beads_size_g' + groups_labels[g_index]
+						s1_sele = proteins_sele[s1][0]
+						for r_index in range(0, proteins_length[s1]):
+							s1_sele.selectAtoms("resnum " + str(r_index + 1)).set_bfactor(proteins_ctcts_res_lip_group["lower"][s_index1][g_index][r_index])
 						s1_sele.write(filename_gro, format="PDB")
 
 	return
