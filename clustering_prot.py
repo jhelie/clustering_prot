@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=Fals
 '''
 **********************************************
 v''' + version_nb + '''
-author: Jean Helie (jean.helie@bioch.ox.ac.uk)
+author: Jean Helie (jean.helie@gmail.com)
 contributors: Anna Duncan, Matthieu Chavent
 git: https://github.com/jhelie/clustering_prot
 **********************************************
