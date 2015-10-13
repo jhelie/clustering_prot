@@ -238,7 +238,7 @@ Lipids identification (see note 2)
 Proteins properties
 -----------------------------------------------------
 --species		: file defining name,multiplicity and sequence of proteins, see note 6
---groups		: cluster groups definition file, see note 4 [BETA]
+--groups		: cluster groups definition file, see note 4
 --res_contact	8	: cutoff to consider contacts between residues c.o.g (Angstrom)
 --res_show	1	: show interactions for residues for at least that many % of contacts between proteins
 --algorithm	cog	: 'cog','min' or 'density', see 'DESCRIPTION'
