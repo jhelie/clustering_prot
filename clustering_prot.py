@@ -190,7 +190,7 @@ The following python modules are needed :
    unit 'multiplicity' should be 1 and 'sequence' the complete protein sequence.
    1 letter code should be used for sequence.
 
-7  The --nx_cutoff option is mandatory and allows to control the distance for which proteins are
+7.  The --nx_cutoff option is mandatory and allows to control the distance for which proteins are
    considered to be in contact.
  
    In case the 'min' option for the --algorithm flag is specified, the --nx_cutoff flag should be
@@ -215,6 +215,35 @@ The following python modules are needed :
 	the species are listed. Doing otherwise would generally be poor practice and lead to complex
 	topology files anyway.
  
+8.  The --res_used option is for when using the 'cog' algorithm, in the event that only part of
+    the protein is required to generate a protein centre of geometry (eg. for Kir channels, 
+    the protein tilts relative to the membrane, but clustering occurs only via a single 
+    extramembrane domain, so distances between cog for whole proteins vary more than the 
+    cog of distances between the domains that actually cluster, giving misleading results).
+    
+    The --res_used value should be used to specify a filename, with format similar to that for 
+    the --nx_cutoff input file, ie., each line should have the format: 
+    'species_index,residue_list'
+    
+    The format of residue list input for --res_used is as follows:
+    resx1:resx2,resx3:resx4,resx5:resx6
+    where 'resx1:resx2' denotes residues in the range x1 to x2 (*inclusive*)
+    and ',' separates residues ranges.  Note that there are no spaces.
+    
+    For example, in a system with three protein species, where residues 1 to 15 are required for
+    species 1; all residues for species 2; and residues 3 to 10 and 50 to 60 are required 
+    for species 3, the file would contain the lines:
+    0,1:15
+    2,3:10,50:60
+    
+    (Note that to specify all residues, the species index is not included in the file)
+    
+9.  --graph_order controls the order of the proteins in the graph in 4_clusters_sizes/4_1_plots_2D
+    (ie. the colour plot showing time vs. protein vs. cluster size).
+    Default is "none", which leaves the proteins in the order present in the gro file
+    If "all" is selected, all proteins are re-ordered so the evolution of cluster size can be seen.
+    "byspecies" orders the proteins as above, but only within protein species.
+    
 
 [ USAGE ]
 
@@ -243,11 +272,14 @@ Proteins properties
 --res_show	1	: show interactions for residues for at least that many % of contacts between proteins
 --algorithm	cog	: 'cog','min' or 'density', see 'DESCRIPTION'
 --nx_cutoff 		: networkX cutoff distance for protein-protein contact (Angstrom or file), see note 7
+--res_used			: file containing list of residues to use to generate protein cog, if --algorithm cog, see note 8
 --db_radius 	20	: DBSCAN search radius (Angstrom)
 --db_neighbours	3	: DBSCAN minimum number of neighbours within a circle of radius --db_radius	
  
 Other options
 -----------------------------------------------------
+--graph_order	none	: 'none', 'byspecies', or 'all' - ordering of proteins in 2D prot vs. cluster size vs. time plot - see note 9.
+--max_clust	none	: 'none' or an integer max cluster size, to be used for the colorscale in 2D protein cluster size plot 
 --version		: show version number and exit
 -h, --help		: show this menu and exit
   
@@ -275,10 +307,13 @@ parser.add_argument('--res_contact', nargs=1, dest='res_contact', default=[8], t
 parser.add_argument('--res_show', nargs=1, dest='res_show', default=[1], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--algorithm', dest='m_algorithm', choices=['cog','min','density'], default='cog', help=argparse.SUPPRESS)
 parser.add_argument('--nx_cutoff', nargs=1, dest='nx_cutoff', help=argparse.SUPPRESS, required=True)
+parser.add_argument('--res_used', nargs=1, dest='res_used', default=['none'], help=argparse.SUPPRESS)
 parser.add_argument('--db_radius', nargs=1, dest='dbscan_dist', default=[20], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--db_neighbours', nargs=1, dest='dbscan_nb', default=[3], type=int, help=argparse.SUPPRESS)
 
 #other options
+parser.add_argument('--graph_order', nargs=1, dest='order', default=['none'], help=argparse.SUPPRESS)
+parser.add_argument('--max_clust', nargs=1, dest='max_clust', default=['none'], help=argparse.SUPPRESS)
 parser.add_argument('--buffer_size', nargs=1, dest='buffer_size', default=[100], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--version', action='version', version='%(prog)s v' + version_nb, help=argparse.SUPPRESS)
 parser.add_argument('-h','--help', action='help', help=argparse.SUPPRESS)
@@ -309,9 +344,12 @@ args.cluster_groups_file = args.cluster_groups_file[0]
 args.res_contact = args.res_contact[0]
 args.res_show = args.res_show[0]
 args.nx_cutoff = args.nx_cutoff[0]
+args.res_used = args.res_used[0]
 args.dbscan_dist = args.dbscan_dist[0]
 args.dbscan_nb = args.dbscan_nb[0]
 #other options
+args.order = args.order[0]
+args.max_clust = args.max_clust[0]
 args.buffer_size = args.buffer_size[0]
 
 #process options
@@ -325,6 +363,7 @@ global colour_leaflet_lower
 global colour_leaflet_upper
 global nx_cutoff_file
 global cog_cutoff_values
+global res_used
 
 vmd_counter = 0
 vmd_cluster_size = ""
@@ -332,6 +371,7 @@ vmd_cluster_group = ""
 lipids_ff_nb = 0
 nx_cutoff_file = False
 cog_cutoff_values = {}
+res_used = {}
 
 colour_group_other = "#E6E6E6"											#very light grey
 colour_leaflet_lower = "#808080"										#dark grey
@@ -489,6 +529,45 @@ except:
 				if (s_index, ss_index) not in cog_cutoff_values.keys():
 					print "Error: cutoff not specified for all species."
 					sys.exit(1)
+
+
+if not os.path.isfile(args.res_used):
+    print "No res_used file specified, so default (all residues) will be used to calculate each protein centre of geometry - see note 8. for more details on this option"
+else:
+    print "\nReading res_used definition file..."
+    s_indices = []
+    with open(args.res_used) as f:
+        lines = f.readlines()
+    for l_index in range(0, len(lines)):
+        #get line content
+        line = lines[l_index]
+        if line == "\n":
+            continue
+        if line[-1] == "\n":
+            line = line[:-1]
+        l_content = line.split(',')
+        print "residues to be used: ",l_content
+        
+        #check line format
+        if len(l_content) < 2:
+            print "Error: the format of line " + str(l_index+1) + " is incorrect, see clustering_prot --help, note 8."
+            print "->", line
+            sys.exit(1)
+        else:
+            #store res_used string
+            s_index = int(l_content[0])
+            res_used[s_index] = " and (resid "+" or resid ".join(l_content[1:])+")"
+            
+            #store list of indices
+            s_indices.append(s_index)
+		
+    # report proteins with res_used lists and check there are no repeats
+    print "res_used lists have been stored for species: ",s_indices
+    s_indices_unique = np.unique(s_indices)
+    if len(s_indices) > len(s_indices_unique):
+        print "Error: one or more proteins have >1 res_used list defined."
+        sys.exit(1)
+
 					
 if args.m_algorithm != "density":
 	if '--db_radius' in sys.argv:
@@ -500,6 +579,18 @@ if args.m_algorithm != "density":
 else:
 	if '--nx_cutoff' in sys.argv:
 		print "Error: --nx_cutoff option specified but --algorithm option set to 'density'."
+		sys.exit(1)
+
+order_options = ["none","byspecies","all"]
+if args.order not in order_options:
+    print "Error: --graph_order set to {} but should be one of {}".format( args.order, ", ".join(order_options) )
+    sys.exit(1)
+    
+if args.max_clust != 'none':
+	try:
+		args.max_clust = int(args.max_clust)
+	except ValueError:
+		print " Error: --max_clust should either be 'none' or an integer.  Currently it is set to: {}".format(args.max_clust)
 		sys.exit(1)
 
 #=========================================================================================
@@ -732,6 +823,7 @@ def load_MDA_universe():
 		frames_to_process = [0]
 		frames_to_write = [True]
 		nb_frames_to_process = 1
+		f_end = f_start  ## added 28 Sept - ALD - o/w progress update crashes if not running with xtc
 	else:
 		print "\nLoading trajectory..."
 		if args.use_gro:
@@ -880,6 +972,7 @@ def identify_proteins():
 	#declare variables
 	global proteins_nb
 	global proteins_sele
+	global proteins_sele_forCoG
 	global proteins_names
 	global proteins_length
 	global proteins_colours
@@ -893,6 +986,7 @@ def identify_proteins():
 
 	proteins_nb = {}
 	proteins_sele = {}
+	proteins_sele_forCoG = {}
 	proteins_names = {}
 	proteins_length = {}
 	proteins_colours = {}
@@ -945,20 +1039,33 @@ def identify_proteins():
 					if tmp_comp == proteins_residues[k]:
 						tmp_specie = k
 						break
-		
+
 			#case: new/first specie
 			if tmp_specie not in proteins_species:
 				proteins_species.append(tmp_specie)
+				# get CoG residue selection string
+				if proteins_species.index(tmp_specie) in res_used: # res_used has integer keys
+					cog_selection_str = res_used[proteins_species.index(tmp_specie)]
+				else:
+					cog_selection_str = ""
 				proteins_nb[tmp_specie] = 0
 				proteins_sele[tmp_specie] = {}
+				proteins_sele_forCoG[tmp_specie] = {}
 				proteins_sele_string_VMD[tmp_specie] = {}
 				proteins_residues[tmp_specie] = tmp_comp
-				proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))	
+				proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))
+				proteins_sele_forCoG[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb)+cog_selection_str)
 				proteins_sele_string_VMD[tmp_specie][proteins_nb[tmp_specie]] = "serial " + str(prev_atom_nb) + " to " + str(last_atom_nb)
 				proteins_length[tmp_specie] = proteins_sele[tmp_specie][proteins_nb[tmp_specie]].numberOfResidues()
 			#case: existing one
 			else:
-				proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))	
+				# get CoG residue selection string
+				if proteins_species.index(tmp_specie) in res_used: # res_used has integer keys
+					cog_selection_str = res_used[proteins_species.index(tmp_specie)]
+				else:
+					cog_selection_str = ""
+				proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))
+				proteins_sele_forCoG[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb)+cog_selection_str)
 				proteins_sele_string_VMD[tmp_specie][proteins_nb[tmp_specie]] = "serial " + str(prev_atom_nb) + " to " + str(last_atom_nb)
 							
 			#update number of proteins and counters
@@ -985,17 +1092,34 @@ def identify_proteins():
 			if tmp_comp == proteins_residues[k]:
 				tmp_specie = k
 				break
+	if tmp_specie in res_used:
+		cog_selection_str = res_used[tmp_specie]
+	else:
+		cog_selection_str = ""
 	if tmp_specie not in proteins_species:
 		proteins_species.append(tmp_specie)
+		# get CoG residue selection string
+		if proteins_species.index(tmp_specie) in res_used: # res_used has integer keys
+			cog_selection_str = res_used[proteins_species.index(tmp_specie)]
+		else:
+			cog_selection_str = ""
 		proteins_nb[tmp_specie] = 0
 		proteins_sele[tmp_specie] = {}
+		proteins_sele_forCoG[tmp_specie] = {}
 		proteins_sele_string_VMD[tmp_specie] = {}
 		proteins_residues[tmp_specie] = tmp_comp
 		proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))
+		proteins_sele_forCoG[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb)+cog_selection_str)
 		proteins_sele_string_VMD[tmp_specie][proteins_nb[tmp_specie]] = "serial " + str(prev_atom_nb) + " to " + str(last_atom_nb)
 		proteins_length[tmp_specie] = proteins_sele[tmp_specie][proteins_nb[tmp_specie]].numberOfResidues()
 	else:
+		# get CoG residue selection string
+		if proteins_species.index(tmp_specie) in res_used: # res_used has integer keys
+			cog_selection_str = res_used[proteins_species.index(tmp_specie)]
+		else:
+			cog_selection_str = ""
 		proteins_sele[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb))
+		proteins_sele_forCoG[tmp_specie][proteins_nb[tmp_specie]] = proteins_sele["all"].selectAtoms("bynum " + str(prev_atom_nb) + ":" + str(last_atom_nb)+cog_selection_str)
 		proteins_sele_string_VMD[tmp_specie][proteins_nb[tmp_specie]] = "serial " + str(prev_atom_nb) + " to " + str(last_atom_nb)
 	proteins_nb[tmp_specie] += 1
 	proteins_nb["all"] += 1
@@ -1387,7 +1511,7 @@ def get_distances(box_dim):
 	#method: use distance between cog
 	#--------------------------------
 	else:
-		tmp_proteins_cogs = np.asarray(map(lambda p_index: calculate_cog(coords_remove_whole(proteins_sele[prot_index2specie[p_index]][prot_index2rel[p_index]].coordinates(), box_dim), box_dim), range(0,nb_proteins)))
+		tmp_proteins_cogs = np.asarray(map(lambda p_index: calculate_cog(coords_remove_whole(proteins_sele_forCoG[prot_index2specie[p_index]][prot_index2rel[p_index]].coordinates(), box_dim), box_dim), range(0,nb_proteins)))
 		dist_matrix = MDAnalysis.analysis.distances.distance_array(np.float32(tmp_proteins_cogs), np.float32(tmp_proteins_cogs), box_dim)
 		#remove self-connections
 		np.fill_diagonal(dist_matrix, 100000)
@@ -1808,7 +1932,10 @@ def update_color_dict():
 	#-------
 	colours_sizes_range = np.zeros(2, int)
 	colours_sizes_range[0] = min(cluster_sizes_sampled_TM)
-	colours_sizes_range[1] = max(cluster_sizes_sampled_TM)
+	if args.max_clust == 'none':
+		colours_sizes_range[1] = max(cluster_sizes_sampled_TM)
+	else:
+		colours_sizes_range[1] = args.max_clust
 	colours_sizes_nb = colours_sizes_range[1] - colours_sizes_range[0] + 1
 	colours_sizes_dict = {}
 	colours_sizes_list = []
@@ -3270,12 +3397,32 @@ def graph_aggregation_2D_sizes():
 		cb_ticks_lab.append("upper")
 	bounds.append(colours_sizes_range[1]+0.5)	
 	norm = mpl.colors.BoundaryNorm(bounds, color_map.N)
-				
+
+    # reorder rows in proteins_size by cluster_size so that clustering can be seen more easily (option: -order)
+    ## NOTE ALD: byspecies not yet tested.
+	if args.order == "all":
+		proteins_size_preordered = proteins_size.T
+		d = sorted([tuple(reversed(proteins_size_preordered[i,:])) for i in range(proteins_size_preordered.shape[0])])
+		proteins_size_ordered = np.array([list(reversed(i)) for i in d])
+	elif args.order == "byspecies":
+		#sorts sections of the proteins_size matrix, corresponding to different species types
+		# relies on the assumption that prots of the same species occuring in one 'block' in the gro file, etc..
+		proteins_size_preordered = proteins_size.T
+		proteins_size_ordered = np.zeros(proteins_size.T.shape)
+		start_row = 0
+		end_row = 0
+		for s_index in range(0, nb_species):
+			end_row += proteins_nb[proteins_species[s_index]]
+			d = sorted([tuple(reversed(proteins_size_preordered[i,:])) for i in range(start_row,end_row)])
+			proteins_size_ordered[start_row:end_row,:] = np.array([list(reversed(i)) for i in d])
+			start_row += proteins_nb[proteins_species[s_index]]
+	elif args.order == "none":
+		proteins_size_ordered = proteins_size.T
 	#create figure ('norm' requires at least 2 elements to work)
 	fig = plt.figure(figsize=(9, 8))
 	ax_plot = fig.add_axes([0.10, 0.1, 0.75, 0.77])	
 	#ax_plot.pcolormesh(proteins_size.T, cmap = color_map, norm = norm)
-	ax_plot.matshow(proteins_size.T, origin = 'lower', interpolation = 'nearest', cmap = color_map, aspect = 'auto', norm = norm)
+	ax_plot.matshow(proteins_size_ordered, origin = 'lower', interpolation = 'nearest', cmap = color_map, aspect = 'auto', norm = norm)
 
 	#create color bar
 	ax_cbar = fig.add_axes([0.88, 0.1, 0.025, 0.77])
@@ -3300,16 +3447,17 @@ def graph_aggregation_2D_sizes():
 	for t in cb.ax.get_yticklabels():
 		t.set_fontsize('xx-small')
 	
-	#label area of plots
-	for s_index in range(0, nb_species):
-		s = proteins_species[s_index]
-		tmp_nb = 0
-		for ss_index in range(0, s_index):
-			tmp_nb += proteins_nb[proteins_species[ss_index]]
-		if s_index > 0:
-			ax_plot.hlines(tmp_nb, -0.5, nb_frames_to_process - 0.5, linestyles = 'dashed')
-		text = ax_plot.text(nb_frames_to_process/float(2), tmp_nb + proteins_nb[s]/float(2), str(proteins_names[s]), verticalalignment='center', horizontalalignment='center', fontsize=20)
-		text.set_alpha(0.3)
+	#label area of plots - only relevant if proteins have not been reordered, or reordered respecting species type
+	if args.order in ["none", "byspecies"]:
+		for s_index in range(0, nb_species):
+			s = proteins_species[s_index]
+			tmp_nb = 0
+			for ss_index in range(0, s_index):
+				tmp_nb += proteins_nb[proteins_species[ss_index]]
+			if s_index > 0:
+				ax_plot.hlines(tmp_nb, -0.5, nb_frames_to_process - 0.5, linestyles = 'dashed')
+			text = ax_plot.text(nb_frames_to_process/float(2), tmp_nb + proteins_nb[s]/float(2), str(proteins_names[s]), verticalalignment='center', horizontalalignment='center', fontsize=20)
+			text.set_alpha(0.3)
 
 	#format axes
 	ax_plot.xaxis.set_label_position('bottom') 
@@ -3357,11 +3505,33 @@ def write_aggregation_2D_sizes():
 		p_end = p_start + proteins_nb[proteins_species[s_index]]		
 		output_stat.write("# -> column " + str(int(p_start)) + " to " + str(int(p_end - 1)) + " correspond to " + str(proteins_names[proteins_species[s_index]]) + " proteins\n")
 
+	# order the proteins in protein_size according to cluster size (as in the above func: graph_aggregation_2D_sizes)
+	# only difference with code in graph_aggregation_2D_sizes is the transpose is produced
+	if args.order == "all":
+		proteins_size_preordered = proteins_size.T
+		d = sorted([tuple(reversed(proteins_size_preordered[i,:])) for i in range(proteins_size_preordered.shape[0])])
+		proteins_size_ordered = np.array([list(reversed(i)) for i in d]).T
+	elif args.order == "byspecies":
+		#sorts sections of the proteins_size matrix, corresponding to different species types
+		# relies on the assumption that prots of the same species occuring in one 'block' in the gro file, etc..
+		proteins_size_preordered = proteins_size.T
+		proteins_size_ordered = np.zeros(proteins_size.T.shape)
+		start_row = 0
+		end_row = 0
+		for s_index in range(0, nb_species):
+			end_row += proteins_nb[proteins_species[s_index]]
+			d = sorted([tuple(reversed(proteins_size_preordered[i,:])) for i in range(start_row,end_row)])
+			proteins_size_ordered[start_row:end_row,:] = np.array([list(reversed(i)) for i in d])
+			start_row += proteins_nb[proteins_species[s_index]]
+		proteins_size_ordered = proteins_size_ordered.T
+	elif args.order == "none":
+		proteins_size_ordered = proteins_size
+
 	#write results
 	for f_index in range(0,nb_frames_to_process):
 		results = str(frames_time[f_index])
 		for p_index in range(0, nb_proteins):
-			results += "	" + str(proteins_size[f_index, p_index])
+			results += "	" + str(proteins_size_ordered[f_index, p_index])
 		output_stat.write(results + "\n")
 	output_stat.close()
 
