@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.9b"
+version_nb = "0.0.9c"
 parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter, description=\
 '''
 **********************************************
@@ -1571,7 +1571,10 @@ def process_clusters(network, f_index, f_nb):
 					else:
 						dist_p_pp_matrix = MDAnalysis.analysis.distances.distance_array(np.asarray(pp_res_cog), np.asarray(p_res_cog), box_dim)
 					if c_size not in proteins_ctcts_res_size[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)].keys():
-						proteins_ctcts_res_size[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][c_size] = np.zeros((proteins_length[proteins_species[p_s_index]], proteins_length[proteins_species[pp_s_index]]))
+						if p_s_index < pp_s_index:
+							proteins_ctcts_res_size[p_s_index, pp_s_index][c_size] = np.zeros((proteins_length[p_specie], proteins_length[pp_specie]))
+						else:
+							proteins_ctcts_res_size[pp_s_index, p_s_index][c_size] = np.zeros((proteins_length[pp_specie], proteins_length[p_specie]))
 					proteins_ctcts_res_size[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][c_size][dist_p_pp_matrix < args.res_contact] += 1
 					if args.cluster_groups_file != "no":
 						proteins_ctcts_res_group[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][groups_sizes_dict[c_size]][dist_p_pp_matrix < args.res_contact] += 1
@@ -1755,7 +1758,10 @@ def process_clusters_TM(network, f_index, box_dim, f_nb):
 						else:
 							dist_p_pp_matrix = MDAnalysis.analysis.distances.distance_array(np.asarray(pp_res_cog), np.asarray(p_res_cog), box_dim)
 						if c_size not in proteins_ctcts_res_size[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)].keys():
-							proteins_ctcts_res_size[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][c_size] = np.zeros((proteins_length[proteins_species[p_s_index]], proteins_length[proteins_species[pp_s_index]]))
+							if p_s_index < pp_s_index:
+								proteins_ctcts_res_size[p_s_index, pp_s_index][c_size] = np.zeros((proteins_length[p_specie], proteins_length[pp_specie]))
+							else:
+								proteins_ctcts_res_size[pp_s_index, p_s_index][c_size] = np.zeros((proteins_length[pp_specie], proteins_length[p_specie]))
 						proteins_ctcts_res_size[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][c_size][dist_p_pp_matrix < args.res_contact] += 1
 						if args.cluster_groups_file != "no":
 							proteins_ctcts_res_group[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][groups_sizes_dict[c_size]][dist_p_pp_matrix < args.res_contact] += 1
