@@ -3,7 +3,7 @@ Python script to analyse clustering of proteins.
 To print the help below: ```python clustering_prot.py --help```
 
 ```
-[ DESCRITPION ]
+[ DESCRIPTION ]
 
 This script calculates the evolution of proteins clustering status.
 	
