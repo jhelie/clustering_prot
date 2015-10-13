@@ -1580,7 +1580,7 @@ def process_clusters(network, f_index, f_nb):
 					if p_s_index == pp_s_index:
 						proteins_ctcts_res_size[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][c_size][(dist_p_pp_matrix < args.res_contact).T] += 1
 						if args.cluster_groups_file != "no":
-							proteins_ctcts_res_size[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][groups_sizes_dict[c_size]][(dist_p_pp_matrix < args.res_contact).T] += 1
+							proteins_ctcts_res_group[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][groups_sizes_dict[c_size]][(dist_p_pp_matrix < args.res_contact).T] += 1
 					
 					#store total contacts with neighbour
 					proteins_ctcts_prot[p_index, pp_index] += np.sum(dist_p_pp_matrix < args.res_contact)
