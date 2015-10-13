@@ -285,6 +285,7 @@ Other options
   
 ''')
 
+
 #data options
 parser.add_argument('-f', nargs=1, dest='grofilename', default=['no'], help=argparse.SUPPRESS, required=True)
 parser.add_argument('-x', nargs=1, dest='xtcfilename', default=['no'], help=argparse.SUPPRESS)
@@ -317,6 +318,7 @@ parser.add_argument('--max_clust', nargs=1, dest='max_clust', default=['none'], 
 parser.add_argument('--buffer_size', nargs=1, dest='buffer_size', default=[100], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--version', action='version', version='%(prog)s v' + version_nb, help=argparse.SUPPRESS)
 parser.add_argument('-h','--help', action='help', help=argparse.SUPPRESS)
+
 
 #=========================================================================================
 # store inputs
@@ -444,6 +446,10 @@ except:
 if not os.path.isfile(args.grofilename):
 	print "Error: file " + str(args.grofilename) + " not found."
 	sys.exit(1)
+if args.cluster_groups_file != "no" and args.max_clust != "none":
+    print "Error: Only one of --groups and --max_clust should be specified; they do not work together"
+    print "Please reconsider inputs such that only one of these options is used"
+    sys.exit(1)
 if args.cluster_groups_file != "no" and not os.path.isfile(args.cluster_groups_file):
 	print "Error: file " + str(args.cluster_groups_file) + " not found."
 	sys.exit(1)
