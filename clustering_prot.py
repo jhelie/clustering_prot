@@ -22,7 +22,7 @@ contributors: Anna Duncan, Matthieu Chavent
 git: https://github.com/jhelie/clustering_prot
 **********************************************
 	
-[ DESCRITPION ]
+[ DESCRITPIONS ]
 
 This script calculates the evolution of proteins clustering status.
 	
