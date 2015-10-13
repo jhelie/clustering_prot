@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.9c"
+version_nb = "0.1.a"
 parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter, description=\
 '''
 **********************************************
