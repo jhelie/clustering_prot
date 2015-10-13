@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.9"
+version_nb = "0.0.9b"
 parser = argparse.ArgumentParser(prog='clustering_prot', usage='', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter, description=\
 '''
 **********************************************
@@ -1570,6 +1570,8 @@ def process_clusters(network, f_index, f_nb):
 						dist_p_pp_matrix = MDAnalysis.analysis.distances.distance_array(np.asarray(p_res_cog), np.asarray(pp_res_cog), box_dim)
 					else:
 						dist_p_pp_matrix = MDAnalysis.analysis.distances.distance_array(np.asarray(pp_res_cog), np.asarray(p_res_cog), box_dim)
+					if c_size not in proteins_ctcts_res_size[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)].keys():
+						proteins_ctcts_res_size[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][c_size] = np.zeros((proteins_length[proteins_species[p_s_index]], proteins_length[proteins_species[pp_s_index]]))
 					proteins_ctcts_res_size[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][c_size][dist_p_pp_matrix < args.res_contact] += 1
 					if args.cluster_groups_file != "no":
 						proteins_ctcts_res_group[min(p_s_index, pp_s_index), max(p_s_index, pp_s_index)][groups_sizes_dict[c_size]][dist_p_pp_matrix < args.res_contact] += 1
