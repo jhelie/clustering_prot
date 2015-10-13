@@ -1483,6 +1483,7 @@ def struct_proteins():
 	global proteins_ctcts_prot
 	global proteins_nb_neighbours
 	proteins_size = np.zeros((nb_frames_to_process, nb_proteins), int)
+		
 	if args.cluster_groups_file != "no":
 		global proteins_group
 		global proteins_ctcts_res_group
@@ -1644,7 +1645,7 @@ def process_clusters(network, f_index, f_nb):
 	c_counter = 0
 	
 	#browse clusters found
-	#=====================
+	#=====================	
 	for cluster in clusters:
 		#display update
 		c_counter += 1
@@ -1964,7 +1965,7 @@ def get_sizes_sampled():
 	#sizes
 	#-----
 	clusters_interfacial = False
-	cluster_sizes_sampled = np.unique(proteins_size)
+	cluster_sizes_sampled = np.unique(proteins_size)	
 	cluster_sizes_sampled_TM = cluster_sizes_sampled[cluster_sizes_sampled != -1]	
 	cluster_sizes_sampled_TM = cluster_sizes_sampled_TM[cluster_sizes_sampled_TM != 99999]
 	cluster_sizes_sampled = sorted(cluster_sizes_sampled)	
@@ -1996,7 +1997,7 @@ def update_color_dict():
 	global colours_sizes_range
 	global colours_sizes_dict
 	global colours_sizes_list
-		
+	
 	#colours: sizes (colours from jet colormap)
 	#-------
 	colours_sizes_range = np.zeros(2, int)
@@ -2096,7 +2097,7 @@ def process_oligomers():
 						for g_index in range(0, groups_number):
 							proteins_ctcts_res_group_new[s_index1, s_index2][g_index] = np.zeros((proteins_length[s1], proteins_length[s2]))
 							for n2 in range(0, proteins_multiplicity[s2]):
-								proteins_ctcts_res_group_new[s_index1, s_index2][g_index] += proteins_ctcts_res_size[s_index1, s_index2][g_index][:, n2*proteins_length[s2]:(n2+1)*proteins_length[s2]]
+								proteins_ctcts_res_group_new[s_index1, s_index2][g_index] += proteins_ctcts_res_group[s_index1, s_index2][g_index][:, n2*proteins_length[s2]:(n2+1)*proteins_length[s2]]
 											
 				#case: s2 isn't an oligomer
 				else:
